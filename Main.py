@@ -110,22 +110,16 @@ if __name__ == "__main__":
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 
-    # Shape con textura del jugador
-    playerModel = createTextureGPUShape(bs.createTextureGPUShape(1,2), tex_pipeline, "sprites/tu.png")
-
-    # Modelo del personaje
-    #humanPlayer = createCar(pipeline) 
+    
 
     # Grafo de escena del background
     "mainScene = createScene(pipeline)"
     # Se añade el auto a la escena principal
     "mainScene.childs += [car]"
 
-    # Se instancia el modelo del auto
-    player = Player(0.3)
-    # Se indican las referencias del nodo y el controller al modelo
-    #player.set_model(car)
-    player.set_controller(controller)
+    
+    # Shape con textura del jugador
+    playerModel = createTextureGPUShape(bs.createTextureQuad(1,1), tex_pipeline, "sprites/tu.png")
 
     # Shape con textura de la carga
     garbage = createTextureGPUShape(bs.createTextureQuad(1,1), tex_pipeline, "sprites/zombie-0.png")
@@ -134,7 +128,7 @@ if __name__ == "__main__":
 
     # Se crea el nodo del player
     playerNode = sg.SceneGraphNode("player")
-    playerNode.childs = [player]
+    playerNode.childs = [playerModel]
 
     # Se crean dos nodos de carga
     garbageNode = sg.SceneGraphNode("garbage")
@@ -147,6 +141,11 @@ if __name__ == "__main__":
     # Se crean el grafo de escena con textura y se agregan las cargasb
     tex_scene = sg.SceneGraphNode("textureScene")
     tex_scene.childs = [playerNode,garbageGroup]
+
+    #Player
+    player = Player(0.1)
+    player.set_model(playerNode)
+    player.set_controller(controller)
 
 
     # Lista con todas las cargas
@@ -187,9 +186,9 @@ if __name__ == "__main__":
         #Control de spawn de basura
         t_pasado = t1 - t_inicial
 
-        if( t_pasado >= cooldown):
+        """if( t_pasado >= cooldown):
             instatiateGarbage(1.1,rand.uniform(-0.85,-0.45),"garbage")
-            t_inicial = t1
+            t_inicial = t1"""
 
         # Measuring performance
         perfMonitor.update(glfw.get_time())
@@ -210,6 +209,7 @@ if __name__ == "__main__":
         player.collision(cargas)
         # Se llama al metodo del player para actualizar su posicion
         player.update(delta)
+        print(player.pos)
 
         # Se crea el movimiento de giro del rotor
         #rotor = sg.findNode(mainScene, "rtRotor")
