@@ -96,6 +96,7 @@ def drawSceneGraphNode(node, pipeline, transformName, parentTransform=tr.identit
     if len(node.childs) == 1 and isinstance(node.childs[0], gs.GPUShape):
         leaf = node.childs[0]
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, transformName), 1, GL_TRUE, newTransform)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "index"), 2.0)
         pipeline.drawCall(leaf)
 
     # If the child node is not a leaf, it MUST be a SceneGraphNode,

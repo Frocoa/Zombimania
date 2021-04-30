@@ -267,7 +267,7 @@ class SimpleTextureTransformShaderProgram:
             void main()
             {
                 gl_Position = transform * vec4(position, 1.0f);
-                outTexCoords = texCoords;
+                outTexCoords = newTexCoord;
             }
             """
 

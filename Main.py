@@ -8,6 +8,7 @@ import grafica.easy_shaders as es
 import grafica.transformations as tr
 import grafica.performance_monitor as pm
 import grafica.scene_graph as sg
+from grafica.gpu_shape import GPUShape
 import random as rand
 from shapes import *
 from model import *
@@ -29,6 +30,81 @@ class Controller:
         self.x = 0
         self.garbageX = 0
 
+# Shader
+class SimpleTextureTransformShaderProgram:
+
+    def __init__(self):
+
+        vertex_shader = """
+            #version 130
+
+            uniform mat4 transform;
+            uniform float index;
+
+            in vec3 position;
+            in vec2 texCoords;
+
+            out vec2 outTexCoords;
+
+            void main()
+            {
+                vec2 newTexCoord;
+                gl_Position = transform * vec4(position, 1.0f);
+                newTexCoord = vec2(texCoords.x/2*index,texCoords.y);
+                outTexCoords = newTexCoord;
+            }
+            """
+
+        fragment_shader = """
+            #version 130
+
+            in vec2 outTexCoords;
+
+            out vec4 outColor;
+
+            uniform sampler2D samplerTex;
+
+            void main()
+            {
+                outColor = texture(samplerTex, outTexCoords);
+            }
+            """
+
+        # Compiling our shader program
+        self.shaderProgram = OpenGL.GL.shaders.compileProgram(
+            OpenGL.GL.shaders.compileShader(vertex_shader, GL_VERTEX_SHADER),
+            OpenGL.GL.shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER))
+
+
+    def setupVAO(self, gpuShape):
+
+        glBindVertexArray(gpuShape.vao)
+
+        glBindBuffer(GL_ARRAY_BUFFER, gpuShape.vbo)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gpuShape.ebo)
+
+        # 3d vertices + 2d texture coordinates => 3*4 + 2*4 = 20 bytes
+        position = glGetAttribLocation(self.shaderProgram, "position")
+        glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(position)
+        
+        texCoords = glGetAttribLocation(self.shaderProgram, "texCoords")
+        glVertexAttribPointer(texCoords, 2, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(3 * SIZE_IN_BYTES))
+        glEnableVertexAttribArray(texCoords)
+
+        # Unbinding current vao
+        glBindVertexArray(0)
+
+
+    def drawCall(self, gpuShape, mode=GL_TRIANGLES):
+        assert isinstance(gpuShape, GPUShape)
+
+        glBindVertexArray(gpuShape.vao)
+        glBindTexture(GL_TEXTURE_2D, gpuShape.texture)
+        glDrawElements(mode, gpuShape.size, GL_UNSIGNED_INT, None)
+
+        # Unbind the current VAO
+        glBindVertexArray(0)
 
 # we will use the global controller as communication with the callback function
 controller = Controller()
@@ -85,7 +161,7 @@ if __name__ == "__main__":
     # Creating a glfw window
     width = 800
     height = 800
-    title = "P3 - Drive simulator"
+    title = "Zombimania"
     window = glfw.create_window(width, height, title, None, None)
 
     if not window:
@@ -100,10 +176,13 @@ if __name__ == "__main__":
     # Pipeline para dibujar shapes con colores interpolados
     pipeline = es.SimpleTransformShaderProgram()
     # Pipeline para dibujar shapes con texturas
-    tex_pipeline = es.SimpleTextureTransformShaderProgram()
+
+    tex_pipeline = SimpleTextureTransformShaderProgram()
+
+    #tex2_pipeline = SimpleTextureTransformShaderProgram()
 
     # Setting up the clear screen color
-    glClearColor(0.15, 0.15, 0.15, 1.0)
+    glClearColor(0.53, 0.807, 0.92, 1.0)
 
     # Enabling transparencies
     glEnable(GL_BLEND)
@@ -118,8 +197,16 @@ if __name__ == "__main__":
     "mainScene.childs += [car]"
 
     
+
     # Shape con textura del jugador
-    playerModel = createTextureGPUShape(bs.createTextureQuad(1,1), tex_pipeline, "sprites/tu.png")
+    playerModelList = []
+    for i in range(6):
+    	model = createTextureGPUShape(bs.createMultiTextureQuad(i/6,(i+1)/6,0,1), tex_pipeline, "sprites/you1.png")
+    	playerModelList += [model]
+
+
+    # Shape con textura del jugador
+    playerModel = createTextureGPUShape(bs.createTextureQuad(1,1), tex_pipeline, "sprites/you1.png")
 
     # Shape con textura de la carga
     garbage = createTextureGPUShape(bs.createTextureQuad(1,1), tex_pipeline, "sprites/zombie-0.png")
@@ -172,8 +259,9 @@ if __name__ == "__main__":
     # Application loop
     t_inicial = 0
     t_pasado = 0
-    cooldown = 0.8
+    cooldown = 0.2
 
+    i = 0
     while not glfw.window_should_close(window):
         # Variables del tiempo
         t1 = glfw.get_time()
@@ -186,9 +274,12 @@ if __name__ == "__main__":
         #Control de spawn de basura
         t_pasado = t1 - t_inicial
 
-        """if( t_pasado >= cooldown):
-            instatiateGarbage(1.1,rand.uniform(-0.85,-0.45),"garbage")
-            t_inicial = t1"""
+        if( t_pasado >= cooldown):
+            #instatiateGarbage(1.1,rand.uniform(-0.85,-0.45),"garbage")
+            playerNode.childs = [playerModelList[i]]
+            print(i)
+            i = (i+1)%6
+            t_inicial = t1
 
         # Measuring performance
         perfMonitor.update(glfw.get_time())
@@ -209,7 +300,6 @@ if __name__ == "__main__":
         player.collision(cargas)
         # Se llama al metodo del player para actualizar su posicion
         player.update(delta)
-        print(player.pos)
 
         # Se crea el movimiento de giro del rotor
         #rotor = sg.findNode(mainScene, "rtRotor")

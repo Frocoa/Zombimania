@@ -65,6 +65,6 @@ class Carga():
 
     def update(self):
         # Se posiciona el nodo referenciado
-        self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, self.size*1.45, 1)])
+        self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, self.size, 1)])
 
     
