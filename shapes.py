@@ -189,11 +189,57 @@ def createCar(pipeline):
 
     return carNode
 
+# Crea el hospital
+def crearEscenario(pipeline):
+
+    # Las shapes utilizadas:
+    gpuBlueGreenQuad = createGPUShape(bs.createColorQuad(0.411, 0.611, 0.592), pipeline)
+    gpuDarkBlueGreenQuad = createGPUShape(bs.createColorQuad(0.266,0.44, 0.42 ), pipeline) 
+    gpuWhiteQuad = createGPUShape(bs.createColorQuad(0.537, 0.647, 0.714 ), pipeline)
+
+    # Nodo de la muralla del hospital
+    murallaNode = sg.SceneGraphNode("muralla")
+    murallaNode.transform = tr.scale(2.0, 2.0, 1.0)
+    murallaNode.childs = [gpuWhiteQuad]
+
+    # Nodo del suelo del hostpial que es un quad azul
+    sueloNode = sg.SceneGraphNode("suelo")
+    sueloNode.transform = tr.scale(1.5,2.0,1.0)
+    sueloNode.childs = [gpuBlueGreenQuad]
+
+    # Nodo de la parte oscura del suelo
+    sueloOscuroNode = sg.SceneGraphNode("sueloOscuro")
+    sueloOscuroNode.transform = tr.scale(1.0,2.0,1.0)
+    sueloOscuroNode.childs = [gpuDarkBlueGreenQuad]
+
+    # Nodo del cuadrado claro
+    cuadradoClaroNode = sg.SceneGraphNode("cuadClaro")
+    cuadradoClaroNode.transform = tr.scale(0.666, 0.666, 1.0)
+    cuadradoClaroNode.childs = [gpuBlueGreenQuad]
+
+    # Nodo del cuadrado oscuro
+    cuadradoOscuroNode = sg.SceneGraphNode("cuadOscuro")
+    cuadradoOscuroNode.transform = tr.scale(0.333, 0.333, 1.0)
+    cuadradoOscuroNode.childs = [gpuDarkBlueGreenQuad]
+
+    # Nodo con el diseño de cuadrados
+    disenoCuadradoNode = sg.SceneGraphNode("diseno")
+    disenoCuadradoNode.transform = tr.translate(0.0, 0.6, 0.0 )  
+    disenoCuadradoNode.childs = [cuadradoClaroNode, cuadradoOscuroNode]  
+
+    # Nodo que junta todo lo del escenario
+    escenarioNode = sg.SceneGraphNode("escenario")
+    escenarioNode.childs = [murallaNode, sueloNode, sueloOscuroNode, disenoCuadradoNode]
+
+
+
+    return escenarioNode
+
 def createScene(pipeline):
     # Funcion que crea la escena de la pregunta 2
 
     # Se crean las shapes en GPU
-    gpuGreenTriangle = createGPUShape(createColorTriangle(0.125, 0.705, 0.094), pipeline) # Shape del triangulo verde
+    gpuGreenTriangle = createGPUShape(createColorTriangle(0.266, 0.439, 0.419), pipeline) # Shape del triangulo verde
     gpuGrayQuad = createGPUShape(bs.createColorQuad(0.6, 0.6, 0.6), pipeline) # Shape del quad gris
     gpuBrownTriangle = createGPUShape(createColorTriangle(0.592, 0.329, 0.090), pipeline) # Shape del triangulo cafe
     gpuWhiteQuad = createGPUShape(bs.createColorQuad(1,1,1), pipeline) # Shape del quad blanco

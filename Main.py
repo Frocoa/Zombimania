@@ -182,7 +182,7 @@ if __name__ == "__main__":
     #tex2_pipeline = SimpleTextureTransformShaderProgram()
 
     # Setting up the clear screen color
-    glClearColor(0.53, 0.807, 0.92, 1.0)
+    glClearColor(0.051, 0.09, 0.109, 1.0)
 
     # Enabling transparencies
     glEnable(GL_BLEND)
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     
 
     # Grafo de escena del background
-    "mainScene = createScene(pipeline)"
+    mainScene = crearEscenario(pipeline)
     # Se añade el auto a la escena principal
     "mainScene.childs += [car]"
 
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     tex_scene.childs = [playerNode,garbageGroup]
 
     #Player
-    player = Player(0.1)
+    player = Player(0.08)
     player.set_model(playerNode)
     player.set_controller(controller)
 
@@ -277,7 +277,6 @@ if __name__ == "__main__":
         if( t_pasado >= cooldown):
             #instatiateGarbage(1.1,rand.uniform(-0.85,-0.45),"garbage")
             playerNode.childs = [playerModelList[i]]
-            print(i)
             i = (i+1)%6
             t_inicial = t1
 
@@ -315,8 +314,8 @@ if __name__ == "__main__":
 
 
         # Se dibuja el grafo de escena principal
-        "glUseProgram(pipeline.shaderProgram)"
-        #g.drawSceneGraphNode(mainScene, pipeline, "transform")
+        glUseProgram(pipeline.shaderProgram)
+        sg.drawSceneGraphNode(mainScene, pipeline, "transform")
 
         # Se dibuja el grafo de escena con texturas
         glUseProgram(tex_pipeline.shaderProgram)
@@ -326,7 +325,7 @@ if __name__ == "__main__":
         glfw.swap_buffers(window)
 
     # freeing GPU memory
-    "mainScene.clear()"
+    mainScene.clear()
     tex_scene.clear()
     
     glfw.terminate()
