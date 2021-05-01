@@ -204,30 +204,26 @@ if __name__ == "__main__":
     	model = createTextureGPUShape(bs.createMultiTextureQuad(i/6,(i+1)/6,0,1), tex_pipeline, "sprites/you1.png")
     	playerModelList += [model]
 
-
-    # Shape con textura del jugador
-    playerModel = createTextureGPUShape(bs.createTextureQuad(1,1), tex_pipeline, "sprites/you1.png")
-
-    # Shape con textura de la carga
-    garbage = createTextureGPUShape(bs.createTextureQuad(1,1), tex_pipeline, "sprites/zombie-0.png")
+    # Shape con textura de la zombie
+    zombieModel = createTextureGPUShape(bs.createTextureQuad(1,1), tex_pipeline, "sprites/zombie-0.png")
 
    
 
     # Se crea el nodo del player
     playerNode = sg.SceneGraphNode("player")
-    playerNode.childs = [playerModel]
+    playerNode.childs = [playerModelList[0]]
 
-    # Se crean dos nodos de carga
-    garbageNode = sg.SceneGraphNode("garbage")
-    garbageNode.childs = [garbage]
+    # Se crean dos nodos de zombie
+    zombieNode = sg.SceneGraphNode("zombie")
+    zombieNode.childs = [zombieModel]
 
-    # Se crea una agrupacion de basura
-    garbageGroup = sg.SceneGraphNode("gGroup")
-    garbageGroup.childs = []
+    # Se crea una agrupacion de zombies
+    zombieGroup = sg.SceneGraphNode("zGroup")
+    zombieGroup.childs = []
 
-    # Se crean el grafo de escena con textura y se agregan las cargasb
+    # Se crean el grafo de escena con textura y se agregan los zombies
     tex_scene = sg.SceneGraphNode("textureScene")
-    tex_scene.childs = [playerNode,garbageGroup]
+    tex_scene.childs = [playerNode,zombieGroup]
 
     #Player
     player = Player(0.08)
@@ -235,21 +231,23 @@ if __name__ == "__main__":
     player.set_controller(controller)
 
 
-    # Lista con todas las cargas
-    cargas = []
+    # Lista con todas los zombies
+    zombieList = []
 
     # Crear una basura
-    def instatiateGarbage(x,y,tag):
-        global cargas 
-        newGarbage = sg.SceneGraphNode(tag)
-        newGarbage.childs = [garbageNode]
+    def instantiateZombie(x,y,tag):
+        global zombieList 
+        newZombie = sg.SceneGraphNode(tag)
+        newZombie.childs = [zombieNode]
 
-        garbageGroup.childs += [newGarbage]
-        carga = Carga(x,y,0.1)
-        carga.set_model(newGarbage)
-        carga.update()
+        speed = rand.uniform(0.1,0.5)
+        zombieGroup.childs += [newZombie]
+        goingUpwards = bool(rand.getrandbits(1))
+        zombie = Zombie(x,y,0.1,speed,goingUpwards)
+        zombie.set_model(newZombie)
+        zombie.update()
 
-        cargas += [carga]
+        zombieList += [zombie]
     
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
     # glfw will swap buffers as soon as possible
@@ -259,7 +257,7 @@ if __name__ == "__main__":
     # Application loop
     t_inicial = 0
     t_pasado = 0
-    cooldown = 0.2
+    zombieCooldown = 0.1
 
     i = 0
     while not glfw.window_should_close(window):
@@ -274,8 +272,8 @@ if __name__ == "__main__":
         #Control de spawn de basura
         t_pasado = t1 - t_inicial
 
-        if( t_pasado >= cooldown):
-            #instatiateGarbage(1.1,rand.uniform(-0.85,-0.45),"garbage")
+        if( t_pasado >= zombieCooldown):
+            instantiateZombie(rand.uniform(-0.7,0.7), 1.1, "garbage")
             playerNode.childs = [playerModelList[i]]
             i = (i+1)%6
             t_inicial = t1
@@ -296,18 +294,21 @@ if __name__ == "__main__":
         glClear(GL_COLOR_BUFFER_BIT)
 
         # Se llama al metodo del player para detectar colisiones
-        player.collision(cargas)
+        player.collision(zombieList)
         # Se llama al metodo del player para actualizar su posicion
         player.update(delta)
 
-        # Se crea el movimiento de giro del rotor
-        #rotor = sg.findNode(mainScene, "rtRotor")
-        #rotor.transform = tr.rotationZ(t1)
 
-        #Movimiento de la basura
-        for carga in cargas:
-            carga.pos[0]-=1*delta
-            carga.update()
+
+        #Movimiento de los zombies
+        for zombie in zombieList:
+            if (zombie.goingUpwards):
+                zombie.pos[1]+=zombie.speed*delta
+
+            else:
+                zombie.pos[1]-=zombie.speed*delta
+
+            zombie.update()
 
             #Aqui se deberia comprobar para eliminar
             #si esta muy lejos pero no estoy seguro como
