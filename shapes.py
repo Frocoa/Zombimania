@@ -232,7 +232,6 @@ def crearEscenario(pipeline):
     escenarioNode.childs = [murallaNode, sueloNode, sueloOscuroNode, disenoCuadradoNode]
 
 
-
     return escenarioNode
 
 def createScene(pipeline):
