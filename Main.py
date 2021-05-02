@@ -201,11 +201,14 @@ if __name__ == "__main__":
     # Shape con textura del jugador
     playerModelList = []
     for i in range(6):
-    	model = createTextureGPUShape(bs.createMultiTextureQuad(i/6,(i+1)/6,0,1), tex_pipeline, "sprites/you1.png")
+    	model = createTextureGPUShape(bs.createMultiTextureQuad(i/6,(i+1)/6,0,1), tex_pipeline, "sprites/playerSheet.png")
     	playerModelList += [model]
 
     # Shape con textura de la zombie
-    zombieModel = createTextureGPUShape(bs.createTextureQuad(1,1), tex_pipeline, "sprites/zombie-0.png")
+    zombieModelList = []
+    for i in range(7):
+        model = createTextureGPUShape(bs.createMultiTextureQuad(i/7,(i+1)/7,0,1), tex_pipeline, "sprites/zombieSheet.png")
+        zombieModelList += [model]
 
    
 
@@ -215,7 +218,7 @@ if __name__ == "__main__":
 
     # Se crean dos nodos de zombie
     zombieNode = sg.SceneGraphNode("zombie")
-    zombieNode.childs = [zombieModel]
+    zombieNode.childs = [zombieModelList[0]]
 
     # Se crea una agrupacion de zombies
     zombieGroup = sg.SceneGraphNode("zGroup")
@@ -243,7 +246,7 @@ if __name__ == "__main__":
         speed = rand.uniform(0.1,0.5)
         zombieGroup.childs += [newZombie]
         goingUpwards = bool(rand.getrandbits(1))
-        zombie = Zombie(x,y,0.1,speed,goingUpwards)
+        zombie = Zombie(x,y,0.12,speed,goingUpwards)
         zombie.set_model(newZombie)
         zombie.update()
 
@@ -260,6 +263,7 @@ if __name__ == "__main__":
     zombieCooldown = 0.1
 
     i = 0
+    z = 0
     while not glfw.window_should_close(window):
         # Variables del tiempo
         t1 = glfw.get_time()
@@ -269,13 +273,15 @@ if __name__ == "__main__":
         if (controller.x <= -2):
             controller.x = 0
 
-        #Control de spawn de basura
+        #Control de spawn de zombies
         t_pasado = t1 - t_inicial
 
         if( t_pasado >= zombieCooldown):
             instantiateZombie(rand.uniform(-0.7,0.7), 1.1, "garbage")
             playerNode.childs = [playerModelList[i]]
+            zombieNode.childs = [zombieModelList[z]]
             i = (i+1)%6
+            z = (z+1)%7
             t_inicial = t1
 
         # Measuring performance
