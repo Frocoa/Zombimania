@@ -225,7 +225,7 @@ if __name__ == "__main__":
     tex_scene.childs = [playerNode,zombieGroup]
 
     #Player
-    player = Player(0.08)
+    player = Player(0.08, 0.16)
     player.set_model(playerNode)
     player.set_controller(controller)
 
@@ -239,10 +239,10 @@ if __name__ == "__main__":
         newZombie = sg.SceneGraphNode(tag)
         newZombie.childs = [zombieNode]
 
-        speed = rand.uniform(0.1,0.5)
+        speed = rand.uniform(0.1, 0.5)
         zombieGroup.childs += [newZombie]
         goingUpwards = bool(rand.getrandbits(1))
-        zombie = Zombie(x,y,0.12,speed,goingUpwards)
+        zombie = Zombie(x, y, 0.12, speed, goingUpwards)
         zombie.set_model(newZombie)
         zombie.update()
 
@@ -261,12 +261,13 @@ if __name__ == "__main__":
 
     # Application loop
     t_inicial = 0
-    zombieCooldown = 0.8
+    
 
     z = 0
-    tamañoHorda = 3
+    tamañoHorda = 2
+    zombieCooldown = 0.8
 
-    playerAnimPeriod = 0.1
+    playerAnimPeriod = 0.08
     playerAnimMoment = 0
     while not glfw.window_should_close(window):
 
@@ -278,8 +279,10 @@ if __name__ == "__main__":
         # Control de la animacion del jugador
         sinceLastFrame = t1 - playerAnimMoment
 
-        if (controller.x <= -2):
-            controller.x = 0
+        print(player.isAlive)    
+        if (player.isAlive == False):
+            playerNode.childs = [zombieNode]
+            (player.sizeX, player.sizeY) = (0.115, 0.161)  
 
         #Control de spawn de zombies
         t_pasado = t1 - t_inicial
@@ -302,7 +305,7 @@ if __name__ == "__main__":
 
         # El personaje tiene animacion solo al moverse
         if (controller.is_a_pressed or controller.is_d_pressed or controller.is_s_pressed or controller.is_w_pressed):
-            if (sinceLastFrame >=  playerAnimPeriod):
+            if (sinceLastFrame >=  playerAnimPeriod and player.isAlive):
                 sinceLastFrame = 0
                 playerAnimMoment = t1
                 changePlayerFrame()

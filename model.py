@@ -6,13 +6,15 @@ import grafica.transformations as tr
 
 class Player():
     # Clase que contiene al modelo del player / auro
-    def __init__(self, size):
+    def __init__(self, sizeX, sizeY):
         self.pos = [0,-0.65] # Posicion en el escenario
-        self.vel = [1,1] # Velocidad de desplazamiento
+        self.vel = [0.8,0.8] # Velocidad de desplazamiento
         self.model = None # Referencia al grafo de escena asociado
         self.controller = None # Referencia del controlador, para acceder a sus variables
-        self.size = size # Escala a aplicar al nodo 
+        self.sizeX = sizeX # Escala en x a aplicar al nodo
+        self.sizeY = sizeY # Escala en y a aplicar al nodo 
         self.radio = 0.1 # distancia para realiozar los calculos de colision
+        self.isAlive = True # Estado del jugador
 
     def set_model(self, new_model):
         # Se obtiene una referencia a uno nodo
@@ -26,21 +28,21 @@ class Player():
         # Se actualiza la posicion del auto
 
         # Si detecta la tecla [D] presionada se mueve hacia la derecha
-        if self.controller.is_d_pressed and self.pos[0] <= 0.72:
+        if self.controller.is_d_pressed and self.pos[0] <= 0.72 and self.isAlive:
             self.pos[0] += self.vel[0] * delta
         # Si detecta la tecla [A] presionada se mueve hacia la izquierda
-        if self.controller.is_a_pressed and self.pos[0] >= -0.72:
+        if self.controller.is_a_pressed and self.pos[0] >= -0.72 and self.isAlive:
             self.pos[0] -= self.vel[0] * delta 
         # Si detecta la tecla [W] presionada y no se ha salido de la pista se mueve hacia arriba
-        if self.controller.is_w_pressed and self.pos[1] <= 1.0:
+        if self.controller.is_w_pressed and self.pos[1] <= 1.0 and self.isAlive:
             self.pos[1] += self.vel[1] * delta
         # Si detecta la tecla [S] presionada y no se ha salido de la pista se mueve hacia abajo
-        if self.controller.is_s_pressed and self.pos[1] >= -0.92:
+        if self.controller.is_s_pressed and self.pos[1] >= -0.92 and self.isAlive:
             self.pos[1] -= self.vel[1] * delta
         #print(self.pos[0], self.pos[1])
 
         # Se le aplica la transformacion de traslado segun la posicion actual
-        self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, 2.0*self.size, 1)])
+        self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.sizeX, self.sizeY, 1)])
 
     def collision(self, cargas):
         # Funcion para detectar las colisiones con las cargas
@@ -49,7 +51,7 @@ class Player():
         for carga in cargas:
             # si la distancia a la carga es menor que la suma de los radios ha ocurrido en la colision
             if (self.radio+carga.radio)**2 > ((self.pos[0]- carga.pos[0])**2 + (self.pos[1]-carga.pos[1])**2):
-                print("CHOQUE")
+                self.isAlive = False
                 return
         
 class Zombie():
