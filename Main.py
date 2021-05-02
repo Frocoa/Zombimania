@@ -260,10 +260,11 @@ if __name__ == "__main__":
     # Application loop
     t_inicial = 0
     t_pasado = 0
-    zombieCooldown = 0.1
+    zombieCooldown = 0.8
 
     i = 0
     z = 0
+    tamañoHorda = 3
     while not glfw.window_should_close(window):
         # Variables del tiempo
         t1 = glfw.get_time()
@@ -277,7 +278,10 @@ if __name__ == "__main__":
         t_pasado = t1 - t_inicial
 
         if( t_pasado >= zombieCooldown):
-            instantiateZombie(rand.uniform(-0.7,0.7), 1.1, "garbage")
+
+            for n in range(tamañoHorda):
+                instantiateZombie(rand.uniform(-0.7,0.7), 1.1, "zombie")
+
             playerNode.childs = [playerModelList[i]]
             zombieNode.childs = [zombieModelList[z]]
             i = (i+1)%6
@@ -301,12 +305,13 @@ if __name__ == "__main__":
 
         # Se llama al metodo del player para detectar colisiones
         player.collision(zombieList)
+
         # Se llama al metodo del player para actualizar su posicion
         player.update(delta)
 
 
 
-        #Movimiento de los zombies
+        # Movimiento de los zombies
         for zombie in zombieList:
             if (zombie.goingUpwards):
                 zombie.pos[1]+=zombie.speed*delta
