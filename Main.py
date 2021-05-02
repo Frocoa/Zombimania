@@ -193,10 +193,6 @@ if __name__ == "__main__":
 
     # Grafo de escena del background
     mainScene = crearEscenario(pipeline)
-    # Se añade el auto a la escena principal
-    "mainScene.childs += [car]"
-
-    
 
     # Shape con textura del jugador
     playerModelList = []
@@ -237,7 +233,7 @@ if __name__ == "__main__":
     # Lista con todas los zombies
     zombieList = []
 
-    # Crear una basura
+    # Crear un zombie
     def instantiateZombie(x,y,tag):
         global zombieList 
         newZombie = sg.SceneGraphNode(tag)
@@ -251,26 +247,37 @@ if __name__ == "__main__":
         zombie.update()
 
         zombieList += [zombie]
+
+
+    def changePlayerFrame():
+        # Se pasa al siguiente frame del jugador
+        playerNode.childs = [playerModelList[(playerModelList.index(playerNode.childs[0])+ 1)%6]]
     
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
+
     # glfw will swap buffers as soon as possible
     glfw.swap_interval(0)
     t0 = glfw.get_time()
 
     # Application loop
     t_inicial = 0
-    t_pasado = 0
     zombieCooldown = 0.8
 
-    i = 0
     z = 0
     tamañoHorda = 3
+
+    playerAnimPeriod = 0.1
+    playerAnimMoment = 0
     while not glfw.window_should_close(window):
+
         # Variables del tiempo
         t1 = glfw.get_time()
         delta = t1 -t0
         t0 = t1
-        controller.x -= 0.5*delta
+        
+        # Control de la animacion del jugador
+        sinceLastFrame = t1 - playerAnimMoment
+
         if (controller.x <= -2):
             controller.x = 0
 
@@ -282,17 +289,23 @@ if __name__ == "__main__":
             for n in range(tamañoHorda):
                 instantiateZombie(rand.uniform(-0.7,0.7), 1.1, "zombie")
 
-            playerNode.childs = [playerModelList[i]]
             zombieNode.childs = [zombieModelList[z]]
-            i = (i+1)%6
             z = (z+1)%7
             t_inicial = t1
-
+    
         # Measuring performance
         perfMonitor.update(glfw.get_time())
         glfw.set_window_title(window, title + str(perfMonitor))
+
         # Using GLFW to check for input events
         glfw.poll_events()
+
+        # El personaje tiene animacion solo al moverse
+        if (controller.is_a_pressed or controller.is_d_pressed or controller.is_s_pressed or controller.is_w_pressed):
+            if (sinceLastFrame >=  playerAnimPeriod):
+                sinceLastFrame = 0
+                playerAnimMoment = t1
+                changePlayerFrame()
 
         # Filling or not the shapes depending on the controller state
         if (controller.fillPolygon):
@@ -339,5 +352,5 @@ if __name__ == "__main__":
     # freeing GPU memory
     mainScene.clear()
     tex_scene.clear()
-    
+
     glfw.terminate()
