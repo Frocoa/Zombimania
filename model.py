@@ -14,7 +14,8 @@ class Player():
         self.sizeX = sizeX # Escala en x a aplicar al nodo
         self.sizeY = sizeY # Escala en y a aplicar al nodo 
         self.radio = 0.1 # distancia para realiozar los calculos de colision
-        self.isAlive = True # Estado del jugador
+        self.isAlive = True # Estado de salud del jugador
+        self.isInfected = False # Estado de enfermedad del jugador
 
     def set_model(self, new_model):
         # Se obtiene una referencia a uno nodo
@@ -90,8 +91,9 @@ class Human():
             self.pos[1] = -self.pos[1]
 
     def set_model(self, new_model):
+        # Se le pone un modelo 
         self.model = new_model
 
     def update(self):
         # Se posiciona el nodo referenciado
-        self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, self.size*1.4, 1)])
+        self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, self.size*2, 1)])

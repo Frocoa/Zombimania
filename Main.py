@@ -197,22 +197,27 @@ if __name__ == "__main__":
     # Shape con textura del jugador
     playerModelList = []
     for i in range(6):
-    	model = createTextureGPUShape(bs.createMultiTextureQuad(i/6,(i+1)/6,0,1), tex_pipeline, "sprites/playerSheet.png")
+    	model = createTextureGPUShape(bs.createMultiTextureQuad(i/6, (i+1)/6, 0, 1), tex_pipeline, "sprites/playerSheet.png")
     	playerModelList += [model]
 
     # Shape con textura de la zombie
     zombieModelList = []
     for i in range(7):
-        model = createTextureGPUShape(bs.createMultiTextureQuad(i/7,(i+1)/7,0,1), tex_pipeline, "sprites/zombieSheet.png")
+        model = createTextureGPUShape(bs.createMultiTextureQuad(i/7, (i+1)/7, 0, 1), tex_pipeline, "sprites/zombieSheet.png")
         zombieModelList += [model]
 
+    # Shape con textura de los humanosw
+    humanModelList = []
+    for i in range(6):
+        model = createTextureGPUShape(bs.createMultiTextureQuad(i/6, (i+1)/6, 0, 1), tex_pipeline, "sprites/humanSheet.png")
+        humanModelList += [model]
    
 
     # Se crea el nodo del player
     playerNode = sg.SceneGraphNode("player")
     playerNode.childs = [playerModelList[0]]
 
-    # Se crean dos nodos de zombie
+    # Se crean un nodo de zombi
     zombieNode = sg.SceneGraphNode("zombie")
     zombieNode.childs = [zombieModelList[0]]
 
@@ -220,9 +225,17 @@ if __name__ == "__main__":
     zombieGroup = sg.SceneGraphNode("zGroup")
     zombieGroup.childs = []
 
+    # Se crea un nodo de humano
+    humanNode = sg.SceneGraphNode("human")
+    humanNode.childs = [humanModelList[0]]
+
+    # Se crea una agrupacion de humanos
+    humanGroup = sg.SceneGraphNode("hGroup")
+    humanGroup.childs = []
+
     # Se crean el grafo de escena con textura y se agregan los zombies
     tex_scene = sg.SceneGraphNode("textureScene")
-    tex_scene.childs = [playerNode,zombieGroup]
+    tex_scene.childs = [playerNode,zombieGroup, humanGroup]
 
     #Player
     player = Player(0.08, 0.16)
@@ -232,6 +245,7 @@ if __name__ == "__main__":
 
     # Lista con todas los zombies
     zombieList = []
+    humanList = []
 
     # Crear un zombie
     def instantiateZombie(x,y,tag):
@@ -247,6 +261,21 @@ if __name__ == "__main__":
         zombie.update()
 
         zombieList += [zombie]
+
+    def instantiateHuman(x,y,tag):
+        global humanList 
+        newHuman = sg.SceneGraphNode(tag)
+        newHuman.childs = [humanNode]
+
+        speed = rand.uniform(0.1, 0.5)
+        humanGroup.childs += [newHuman]
+        goingUpwards = bool(rand.getrandbits(1))
+        human = Human(x, y, 0.08, speed, goingUpwards, True)
+        human.set_model(newHuman)
+        human.update()
+
+        humanList += [human]   
+        print("asd")
 
 
     def changePlayerFrame():
@@ -278,8 +307,7 @@ if __name__ == "__main__":
         
         # Control de la animacion del jugador
         sinceLastFrame = t1 - playerAnimMoment
-
-        print(player.isAlive)    
+  
         if (player.isAlive == False):
             playerNode.childs = [zombieNode]
             (player.sizeX, player.sizeY) = (0.115, 0.161)  
@@ -290,9 +318,11 @@ if __name__ == "__main__":
         if( t_pasado >= zombieCooldown):
 
             for n in range(tamañoHorda):
-                instantiateZombie(rand.uniform(-0.7,0.7), 1.1, "zombie")
+                #instantiateZombie(rand.uniform(-0.7,0.7), 1.1, "zombie")
+                instantiateHuman(rand.uniform(-0.7,0.7), 1.1, "human")
 
             zombieNode.childs = [zombieModelList[z]]
+
             z = (z+1)%7
             t_inicial = t1
     
@@ -340,6 +370,15 @@ if __name__ == "__main__":
             #Aqui se deberia comprobar para eliminar
             #si esta muy lejos pero no estoy seguro como
 
+        # Movimiento de los humanos
+        for human in humanList:
+            if (human.goingUpwards):
+                human.pos[1] += human.speed * delta
+            
+            else:
+                human.pos[1] -= human.speed * delta
+
+            human.update()
 
         # Se dibuja el grafo de escena principal
         glUseProgram(pipeline.shaderProgram)
