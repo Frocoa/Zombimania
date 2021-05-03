@@ -55,10 +55,10 @@ class Player():
                 return
         
 class Zombie():
-    # Clase para contener las caracteristicas de un objeto que representa una carga 
-    def __init__(self, posx, posy, size, speed, goingUpwards):
-        self.pos = [posx, posy]
-        self.radio = 0.05
+    # Clase de los Zombis
+    def __init__(self, posX, posY, size, speed, goingUpwards):
+        self.pos = [posX, posY]
+        self.radio = 0.02
         self.size = size
         self.model = None
         self.speed = speed
@@ -70,7 +70,27 @@ class Zombie():
     def set_model(self, new_model):
         self.model = new_model
 
-   
+    def update(self):
+        # Se posiciona el nodo referenciado
+        self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, self.size*1.4, 1)])
+
+
+class Human():
+    # CLase para los humanos
+    def __init__(self, posX, posY, size, speed, goingUpwards, isInfected):
+        self.pos = [posX, posY]
+        self.radio = 0.02
+        self.size = size
+        self.speed = speed
+        self.isInfected = isInfected
+        self.goingUpwards = goingUpwards
+        self.model = None
+
+        if (self.goingUpwards):
+            self.pos[1] = -self.pos[1]
+
+    def set_model(self, new_model):
+        self.model = new_model
 
     def update(self):
         # Se posiciona el nodo referenciado

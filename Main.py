@@ -330,10 +330,10 @@ if __name__ == "__main__":
         # Movimiento de los zombies
         for zombie in zombieList:
             if (zombie.goingUpwards):
-                zombie.pos[1]+=zombie.speed*delta
+                zombie.pos[1] += zombie.speed * delta
 
             else:
-                zombie.pos[1]-=zombie.speed*delta
+                zombie.pos[1] -= zombie.speed * delta
 
             zombie.update()
 
