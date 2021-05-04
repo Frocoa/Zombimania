@@ -27,8 +27,6 @@ class Controller:
         self.is_s_pressed = False
         self.is_a_pressed = False
         self.is_d_pressed = False
-        self.x = 0
-        self.garbageX = 0
 
 # Shader
 class SimpleTextureTransformShaderProgram:
@@ -253,7 +251,7 @@ if __name__ == "__main__":
         newZombie = sg.SceneGraphNode(tag)
         newZombie.childs = [zombieNode]
 
-        speed = rand.uniform(0.1, 0.5)
+        speed = rand.uniform(0.4, 0.5)
         zombieGroup.childs += [newZombie]
         goingUpwards = bool(rand.getrandbits(1))
         zombie = Zombie(x, y, 0.12, speed, goingUpwards)
@@ -275,7 +273,6 @@ if __name__ == "__main__":
         human.update()
 
         humanList += [human]   
-        print("asd")
 
 
     def changePlayerFrame():
@@ -293,12 +290,17 @@ if __name__ == "__main__":
     
 
     z = 0
-    tamañoHorda = 2
-    zombieCooldown = 0.8
+    tamañoHorda = 5
+    tamañoGrupoHumanos = 1
+    zombieCooldown = 2.0
 
     playerAnimPeriod = 0.08
     playerAnimMoment = 0
     while not glfw.window_should_close(window):
+
+
+        #print(zombieList)
+        #print(zombieNode.childs)
 
         # Variables del tiempo
         t1 = glfw.get_time()
@@ -312,20 +314,23 @@ if __name__ == "__main__":
             playerNode.childs = [zombieNode]
             (player.sizeX, player.sizeY) = (0.115, 0.161)  
 
-        #Control de spawn de zombies
+        # Control de spawn de zombies y humanos
         t_pasado = t1 - t_inicial
 
         if( t_pasado >= zombieCooldown):
 
             for n in range(tamañoHorda):
-                #instantiateZombie(rand.uniform(-0.7,0.7), 1.1, "zombie")
-                instantiateHuman(rand.uniform(-0.7,0.7), 1.1, "human")
+                instantiateZombie(rand.uniform(-0.7,0.7), 1.1, "zombie")
+                
 
             zombieNode.childs = [zombieModelList[z]]
 
+            """for n in range(tamañoGrupoHumanos):
+                instantiateHuman(rand.uniform(-0.7, 0.7), 1.1, "human")"""
+
             z = (z+1)%7
             t_inicial = t1
-    
+
         # Measuring performance
         perfMonitor.update(glfw.get_time())
         glfw.set_window_title(window, title + str(perfMonitor))
@@ -355,8 +360,6 @@ if __name__ == "__main__":
         # Se llama al metodo del player para actualizar su posicion
         player.update(delta)
 
-
-
         # Movimiento de los zombies
         for zombie in zombieList:
             if (zombie.goingUpwards):
@@ -379,6 +382,29 @@ if __name__ == "__main__":
                 human.pos[1] -= human.speed * delta
 
             human.update()
+
+        """if t1 >= 15:
+            for zombie in zombieList:
+                zombie.model.clear()
+
+            zombieList = []
+            zombieNode.childs = []
+            zombieGroup.childs = []"""
+
+        #Borrar zombies
+        for zombie in zombieList:
+            if zombie.shouldBeRemoved:
+                zombie.model.childs = []
+                zombieGroup.childs.pop(zombieGroup.childs.index(zombie.model))
+                zombieList.pop(zombieList.index(zombie))
+                zombie.model.clear()
+
+        #Debug de rendimiento
+        print("###########################################")
+        print("Cantidad de objeto zombie:", len(zombieList))
+        print("Cantidad de zombies en ZombieGroup:", len(zombieGroup.childs))
+        print("Se lleva corriendo:",t1,"segundos")
+        print("###########################################")
 
         # Se dibuja el grafo de escena principal
         glUseProgram(pipeline.shaderProgram)

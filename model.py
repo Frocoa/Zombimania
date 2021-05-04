@@ -3,6 +3,7 @@
 import glfw
 import numpy as np
 import grafica.transformations as tr
+import random as rand
 
 class Player():
     # Clase que contiene al modelo del player / auro
@@ -16,6 +17,8 @@ class Player():
         self.radio = 0.1 # distancia para realiozar los calculos de colision
         self.isAlive = True # Estado de salud del jugador
         self.isInfected = False # Estado de enfermedad del jugador
+        self.deathRolls = 0 # cantidad de veces que el virus "afecta" al jugador
+        self.total = 0
 
     def set_model(self, new_model):
         # Se obtiene una referencia a uno nodo
@@ -26,8 +29,6 @@ class Player():
         self.controller = new_controller
 
     def update(self, delta):
-        # Se actualiza la posicion del auto
-
         # Si detecta la tecla [D] presionada se mueve hacia la derecha
         if self.controller.is_d_pressed and self.pos[0] <= 0.72 and self.isAlive:
             self.pos[0] += self.vel[0] * delta
@@ -40,7 +41,13 @@ class Player():
         # Si detecta la tecla [S] presionada y no se ha salido de la pista se mueve hacia abajo
         if self.controller.is_s_pressed and self.pos[1] >= -0.92 and self.isAlive:
             self.pos[1] -= self.vel[1] * delta
-        #print(self.pos[0], self.pos[1])
+        # Se hace una tirada de infeccion cada frame para ver cuanto aguanta el player
+        if self.isInfected == True and self.isAlive:
+            if(rand.uniform(0.0,100.0) >= 99.9):
+                self.deathRolls += 1
+        # Si la infeccion avanzo demasiado entonces el personaje muere y se transforma en un zombi
+        if self.deathRolls >= 7:
+            self.isAlive = False
 
         # Se le aplica la transformacion de traslado segun la posicion actual
         self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.sizeX, self.sizeY, 1)])
@@ -52,7 +59,8 @@ class Player():
         for carga in cargas:
             # si la distancia a la carga es menor que la suma de los radios ha ocurrido en la colision
             if (self.radio+carga.radio)**2 > ((self.pos[0]- carga.pos[0])**2 + (self.pos[1]-carga.pos[1])**2):
-                self.isAlive = False
+                #self.isAlive = False
+                self.total+=1
                 return
         
 class Zombie():
@@ -64,17 +72,22 @@ class Zombie():
         self.model = None
         self.speed = speed
         self.goingUpwards = goingUpwards
+        self.shouldBeRemoved = False
 
         if (self.goingUpwards):
             self.pos[1] = -self.pos[1]
 
     def set_model(self, new_model):
         self.model = new_model
+    
+    def checkShouldBeRemoved(self):
+        if np.absolute(self.pos)[1] >= 1.5:
+            self.shouldBeRemoved = True
 
     def update(self):
         # Se posiciona el nodo referenciado
         self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, self.size*1.4, 1)])
-
+        self.checkShouldBeRemoved()
 
 class Human():
     # CLase para los humanos
