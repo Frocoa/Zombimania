@@ -216,8 +216,8 @@ if __name__ == "__main__":
     playerNode.childs = [playerModelList[0]]
 
     # Se crean un nodo de zombi
-    zombieNode = sg.SceneGraphNode("zombie")
-    zombieNode.childs = [zombieModelList[0]]
+    #zombieNode = sg.SceneGraphNode("zombie")
+    #zombieNode.childs = [zombieModelList[0]]
 
     # Se crea una agrupacion de zombies
     zombieGroup = sg.SceneGraphNode("zGroup")
@@ -246,12 +246,12 @@ if __name__ == "__main__":
     humanList = []
 
     # Crear un zombie
-    def instantiateZombie(x,y,tag):
+    def instantiateZombie(x,y):
         global zombieList 
-        newZombie = sg.SceneGraphNode(tag)
-        newZombie.childs = [zombieNode]
+        newZombie = sg.SceneGraphNode("zombie")
+        newZombie.childs = [zombieModelList[0]]
 
-        speed = rand.uniform(0.4, 0.5)
+        speed = rand.uniform(0.2, 0.3)
         zombieGroup.childs += [newZombie]
         goingUpwards = bool(rand.getrandbits(1))
         zombie = Zombie(x, y, 0.12, speed, goingUpwards)
@@ -298,10 +298,6 @@ if __name__ == "__main__":
     playerAnimMoment = 0
     while not glfw.window_should_close(window):
 
-
-        #print(zombieList)
-        #print(zombieNode.childs)
-
         # Variables del tiempo
         t1 = glfw.get_time()
         delta = t1 -t0
@@ -311,7 +307,7 @@ if __name__ == "__main__":
         sinceLastFrame = t1 - playerAnimMoment
   
         if (player.isAlive == False):
-            playerNode.childs = [zombieNode]
+            playerNode.childs = [zombieModelList[0]]
             (player.sizeX, player.sizeY) = (0.115, 0.161)  
 
         # Control de spawn de zombies y humanos
@@ -320,16 +316,17 @@ if __name__ == "__main__":
         if( t_pasado >= zombieCooldown):
 
             for n in range(tamañoHorda):
-                instantiateZombie(rand.uniform(-0.7,0.7), 1.1, "zombie")
+                instantiateZombie(rand.uniform(-0.7,0.7), 1.1)
                 
-
-            zombieNode.childs = [zombieModelList[z]]
-
+            
             """for n in range(tamañoGrupoHumanos):
                 instantiateHuman(rand.uniform(-0.7, 0.7), 1.1, "human")"""
 
             z = (z+1)%7
             t_inicial = t1
+
+        for zombie in zombieList:
+                zombie.model.childs = [zombieModelList[zombie.spriteIndex]]
 
         # Measuring performance
         perfMonitor.update(glfw.get_time())
@@ -362,16 +359,9 @@ if __name__ == "__main__":
 
         # Movimiento de los zombies
         for zombie in zombieList:
-            if (zombie.goingUpwards):
-                zombie.pos[1] += zombie.speed * delta
-
-            else:
-                zombie.pos[1] -= zombie.speed * delta
-
+            zombie.pos[1] -= zombie.speed * delta
             zombie.update()
 
-            #Aqui se deberia comprobar para eliminar
-            #si esta muy lejos pero no estoy seguro como
 
         # Movimiento de los humanos
         for human in humanList:
@@ -383,28 +373,18 @@ if __name__ == "__main__":
 
             human.update()
 
-        """if t1 >= 15:
-            for zombie in zombieList:
-                zombie.model.clear()
-
-            zombieList = []
-            zombieNode.childs = []
-            zombieGroup.childs = []"""
 
         #Borrar zombies
         for zombie in zombieList:
             if zombie.shouldBeRemoved:
-                zombie.model.childs = []
-                zombieGroup.childs.pop(zombieGroup.childs.index(zombie.model))
-                zombieList.pop(zombieList.index(zombie))
-                zombie.model.clear()
+                zombie.remove(zombieGroup, zombieList)
 
         #Debug de rendimiento
-        print("###########################################")
+        """print("###########################################")
         print("Cantidad de objeto zombie:", len(zombieList))
         print("Cantidad de zombies en ZombieGroup:", len(zombieGroup.childs))
         print("Se lleva corriendo:",t1,"segundos")
-        print("###########################################")
+        print("###########################################")"""
 
         # Se dibuja el grafo de escena principal
         glUseProgram(pipeline.shaderProgram)

@@ -73,9 +73,14 @@ class Zombie():
         self.speed = speed
         self.goingUpwards = goingUpwards
         self.shouldBeRemoved = False
+        self.spriteCooldown = 0.05/np.absolute(speed)
+        self.spriteIndex = 0
+        self.t0 = 0
+        self.t1 = 0
 
         if (self.goingUpwards):
             self.pos[1] = -self.pos[1]
+            self.speed = - self.speed
 
     def set_model(self, new_model):
         self.model = new_model
@@ -84,10 +89,27 @@ class Zombie():
         if np.absolute(self.pos)[1] >= 1.5:
             self.shouldBeRemoved = True
 
+    def remove(self, zombieGroup, zombieList):
+        self.model.childs = []
+        zombieGroup.childs.pop(zombieGroup.childs.index(self.model))
+        zombieList.pop(zombieList.index(self))
+        self.model.clear()
+
+
     def update(self):
         # Se posiciona el nodo referenciado
+        self.t1 = glfw.get_time()
+
+        deltaSpriteChange = self.t1 - self.t0
+
+        if deltaSpriteChange >= self.spriteCooldown:
+            self.spriteIndex = (self.spriteIndex + 1) % 6
+            self.t0 = self.t1
+
         self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, self.size*1.4, 1)])
         self.checkShouldBeRemoved()
+
+
 
 class Human():
     # CLase para los humanos
