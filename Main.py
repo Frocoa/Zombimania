@@ -198,6 +198,12 @@ if __name__ == "__main__":
     	model = createTextureGPUShape(bs.createMultiTextureQuad(i/6, (i+1)/6, 0, 1), tex_pipeline, "sprites/playerSheet.png")
     	playerModelList += [model]
 
+    # Shape con textura del jugador cuando este muriendo
+    playerDyingModelList = []
+    for i in range(6):
+        model = createTextureGPUShape(bs.createMultiTextureQuad(i/6, (i+1)/6, 0, 1), tex_pipeline, "sprites/playerDyingSheet.png")
+        playerDyingModelList += [model]
+
     # Shape con textura de la zombie
     zombieModelList = []
     for i in range(7):
@@ -275,9 +281,13 @@ if __name__ == "__main__":
         humanList += [human]   
 
 
-    def changePlayerFrame():
+    def changePlayerFrame(frameIndex):
         # Se pasa al siguiente frame del jugador
-        playerNode.childs = [playerModelList[(playerModelList.index(playerNode.childs[0])+ 1)%6]]
+        if player.deathRolls <= 4:
+            playerNode.childs = [playerModelList[frameIndex]]
+
+        else:
+            playerNode.childs = [playerDyingModelList[frameIndex]] 
     
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
 
@@ -337,10 +347,8 @@ if __name__ == "__main__":
 
         # El personaje tiene animacion solo al moverse
         if (controller.is_a_pressed or controller.is_d_pressed or controller.is_s_pressed or controller.is_w_pressed):
-            if (sinceLastFrame >=  playerAnimPeriod and player.isAlive):
-                sinceLastFrame = 0
-                playerAnimMoment = t1
-                changePlayerFrame()
+            if (player.isAlive):
+                changePlayerFrame(player.nextSpriteIndex())
 
         # Filling or not the shapes depending on the controller state
         if (controller.fillPolygon):

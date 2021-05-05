@@ -16,9 +16,13 @@ class Player():
         self.sizeY = sizeY # Escala en y a aplicar al nodo 
         self.radio = 0.1 # distancia para realiozar los calculos de colision
         self.isAlive = True # Estado de salud del jugador
-        self.isInfected = False # Estado de enfermedad del jugador
+        self.isInfected = True # Estado de enfermedad del jugador
         self.deathRolls = 0 # cantidad de veces que el virus "afecta" al jugador
-        self.total = 0
+        self.spriteCooldown = 0.08
+        self.spriteIndex = 0
+        self.timePassed = 0
+        self.t0 = 0
+        self.t1 = 0
 
     def set_model(self, new_model):
         # Se obtiene una referencia a uno nodo
@@ -27,8 +31,19 @@ class Player():
     def set_controller(self, new_controller):
         # Se obtiene la referncia al controller
         self.controller = new_controller
+    
+    def nextSpriteIndex(self):
+        if self.timePassed >= self.spriteCooldown:
+            self.spriteIndex = (self.spriteIndex+1)%6
+            self.t0 = self.t1
+            return self.spriteIndex
+        else:
+            return self.spriteIndex
 
     def update(self, delta):
+        self.t1 = glfw.get_time()
+        self.timePassed = self.t1 - self.t0
+
         # Si detecta la tecla [D] presionada se mueve hacia la derecha
         if self.controller.is_d_pressed and self.pos[0] <= 0.72 and self.isAlive:
             self.pos[0] += self.vel[0] * delta
@@ -60,7 +75,6 @@ class Player():
             # si la distancia a la carga es menor que la suma de los radios ha ocurrido en la colision
             if (self.radio+carga.radio)**2 > ((self.pos[0]- carga.pos[0])**2 + (self.pos[1]-carga.pos[1])**2):
                 #self.isAlive = False
-                self.total+=1
                 return
         
 class Zombie():
@@ -103,7 +117,7 @@ class Zombie():
         deltaSpriteChange = self.t1 - self.t0
 
         if deltaSpriteChange >= self.spriteCooldown:
-            self.spriteIndex = (self.spriteIndex + 1) % 6
+            self.spriteIndex = (self.spriteIndex + 1) % 7
             self.t0 = self.t1
 
         self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, self.size*1.4, 1)])
