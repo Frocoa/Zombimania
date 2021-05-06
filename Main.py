@@ -290,8 +290,8 @@ if __name__ == "__main__":
     t_inicial = 0
     
     p = 0.2
-    tamañoHorda = 2
-    tamañoGrupoHumanos = 1
+    tamañoHorda = 0
+    tamañoGrupoHumanos = 5
     zombieCooldown = 2.0
 
     playerAnimPeriod = 0.08
@@ -374,11 +374,23 @@ if __name__ == "__main__":
         # Movimiento de los zombies
         for zombie in zombieList:
             zombie.pos[1] -= zombie.speed * delta
+
+            if zombie.goingRight == True:
+                zombie.pos[0] += zombie.speed * delta * 0.8
+            else:
+                zombie.pos[0] -= zombie.speed * delta * 0.8
+
             zombie.update()
 
         # Movimiento de los humanos
         for human in humanList:
             human.pos[1] -= human.speed * delta
+
+            if human.goingRight == True:
+                human.pos[0] += human.speed * delta * 0.8
+            else:
+                human.pos[0] -= human.speed * delta * 0.8    
+
             human.collision(zombieList)
             human.update()
             if human.isAlive == False:

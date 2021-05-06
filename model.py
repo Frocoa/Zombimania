@@ -46,8 +46,6 @@ class Player():
         self.t1 = glfw.get_time()
         self.timePassed = self.t1 - self.t0
 
-        print(self.isInfected)
-
         # Si detecta la tecla [D] presionada se mueve hacia la derecha
         if self.controller.is_d_pressed and self.pos[0] <= 0.72 and self.isAlive:
             self.pos[0] += self.vel[0] * delta
@@ -75,8 +73,6 @@ class Player():
         for human in humanList:
             # si la distancia al humano es menor que la suma de los radios ha ocurrido en la colision
             if (self.radio+human.radio)**2 > ((self.pos[0]- human.pos[0])**2 + (self.pos[1]-human.pos[1])**2):
-                print("choque con humano")
-                print ("humano:",human.isInfected)
                 if human.isInfected == True:
                     self.isInfected = True
 
@@ -92,6 +88,7 @@ class Zombie():
         self.shouldBeRemoved = False
         self.spriteCooldown = 0.05/np.absolute(speed)
         self.spriteIndex = 0
+        self.goingRight = False
         self.t0 = 0
         self.t1 = 0
 
@@ -116,6 +113,23 @@ class Zombie():
         zombieList.pop(zombieList.index(self))
         self.model.clear()
 
+    def checkDirection(self):
+        if self.goingUpwards == False:
+            if self.pos[0] >= 0.7:
+                self.goingRight = False
+        
+            if self.pos[0] <= -0.7:
+                self.goingRight = True 
+
+        elif self.goingUpwards == True:
+            if self.pos[0] >= 0.7:
+                self.goingRight = True
+        
+            if self.pos[0] <= -0.7:
+                self.goingRight = False
+
+        if rand.uniform(0,1) <= 0.002:
+            self.goingRight = not self.goingRight
 
     def update(self):
         self.t1 = glfw.get_time()
@@ -128,6 +142,7 @@ class Zombie():
 
         self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, self.size*1.4, 1)])
         self.checkShouldBeRemoved()
+        self.checkDirection()
 
 
 class Human():
@@ -143,6 +158,7 @@ class Human():
         self.goingUpwards = goingUpwards
         self.model = None
         self.spriteCooldown = 0.05/np.absolute(speed)
+        self.goingRight = True
         self.spriteIndex = 0
         self.t0 = 0
         self.t1 = 0
@@ -169,6 +185,24 @@ class Human():
         humanList.pop(humanList.index(self))
         self.model.clear()
     
+    def checkDirection(self):
+        if self.goingUpwards == False:
+            if self.pos[0] >= 0.7:
+                self.goingRight = False
+        
+            if self.pos[0] <= -0.7:
+                self.goingRight = True 
+
+        elif self.goingUpwards == True:
+            if self.pos[0] >= 0.7:
+                self.goingRight = True
+        
+            if self.pos[0] <= -0.7:
+                self.goingRight = False
+
+        if rand.uniform(0,1) <= 0.008:
+            self.goingRight = not self.goingRight      
+
     def collision(self, zombieList):
         for zombie in zombieList:
             if (self.radio+zombie.radio)**2 > ((self.pos[0]- zombie.pos[0])**2 + (self.pos[1]-zombie.pos[1])**2):
@@ -186,3 +220,4 @@ class Human():
         # Se posiciona el nodo referenciado
         self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, self.size*2, 1)])
         self.checkShouldBeRemoved()
+        self.checkDirection()
