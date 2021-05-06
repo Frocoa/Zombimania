@@ -221,17 +221,9 @@ if __name__ == "__main__":
     playerNode = sg.SceneGraphNode("player")
     playerNode.childs = [playerModelList[0]]
 
-    # Se crean un nodo de zombi
-    #zombieNode = sg.SceneGraphNode("zombie")
-    #zombieNode.childs = [zombieModelList[0]]
-
-    # Se crea una agrupacion de zombies
+    # Se crea un nodo de todos los zombies
     zombieGroup = sg.SceneGraphNode("zGroup")
     zombieGroup.childs = []
-
-    # Se crea un nodo de humano
-    humanNode = sg.SceneGraphNode("human")
-    humanNode.childs = [humanModelList[0]]
 
     # Se crea una agrupacion de humanos
     humanGroup = sg.SceneGraphNode("hGroup")
@@ -252,29 +244,28 @@ if __name__ == "__main__":
     humanList = []
 
     # Crear un zombie
-    def instantiateZombie(x,y):
+    def instantiateZombie(x,y,goingUpwards):
         global zombieList 
         newZombie = sg.SceneGraphNode("zombie")
         newZombie.childs = [zombieModelList[0]]
 
         speed = rand.uniform(0.2, 0.3)
         zombieGroup.childs += [newZombie]
-        goingUpwards = bool(rand.getrandbits(1))
         zombie = Zombie(x, y, 0.12, speed, goingUpwards)
         zombie.set_model(newZombie)
         zombie.update()
 
         zombieList += [zombie]
 
-    def instantiateHuman(x,y,tag):
+    def instantiateHuman(x, y, goingUpwards):
         global humanList 
-        newHuman = sg.SceneGraphNode(tag)
-        newHuman.childs = [humanNode]
+        newHuman = sg.SceneGraphNode("human")
+        newHuman.childs = [humanModelList[0]]
 
-        speed = rand.uniform(0.1, 0.5)
+        speed = rand.uniform(0.2, 0.5)
         humanGroup.childs += [newHuman]
-        goingUpwards = bool(rand.getrandbits(1))
-        human = Human(x, y, 0.08, speed, goingUpwards, True)
+        isInfected = bool(rand.getrandbits(1))
+        human = Human(x, y, 0.08, speed, goingUpwards, isInfected)
         human.set_model(newHuman)
         human.update()
 
@@ -283,7 +274,7 @@ if __name__ == "__main__":
 
     def changePlayerFrame(frameIndex):
         # Se pasa al siguiente frame del jugador
-        if player.deathRolls <= 4:
+        if player.isInfected == False:
             playerNode.childs = [playerModelList[frameIndex]]
 
         else:
@@ -298,9 +289,8 @@ if __name__ == "__main__":
     # Application loop
     t_inicial = 0
     
-
-    z = 0
-    tamañoHorda = 5
+    p = 0.2
+    tamañoHorda = 2
     tamañoGrupoHumanos = 1
     zombieCooldown = 2.0
 
@@ -316,27 +306,34 @@ if __name__ == "__main__":
         # Control de la animacion del jugador
         sinceLastFrame = t1 - playerAnimMoment
   
-        if (player.isAlive == False):
-            playerNode.childs = [zombieModelList[0]]
-            (player.sizeX, player.sizeY) = (0.115, 0.161)  
-
-        # Control de spawn de zombies y humanos
+        # Todo lo que ocurre cada T segundos
         t_pasado = t1 - t_inicial
 
         if( t_pasado >= zombieCooldown):
 
             for n in range(tamañoHorda):
-                instantiateZombie(rand.uniform(-0.7,0.7), 1.1)
+                instantiateZombie(rand.uniform(-0.7,0.7), 1.1, bool(rand.getrandbits(1)))
                 
             
-            """for n in range(tamañoGrupoHumanos):
-                instantiateHuman(rand.uniform(-0.7, 0.7), 1.1, "human")"""
+            for n in range(tamañoGrupoHumanos):
+                instantiateHuman(rand.uniform(-0.7, 0.7), 1.1, bool(rand.getrandbits(1)))
 
-            z = (z+1)%7
+            for human in humanList:
+                if human.isInfected:
+                    human.deathRoll(p)
+
+            if player.isInfected:
+                player.deathRoll(p)
+
+
             t_inicial = t1
 
+        #Control del sprite 
         for zombie in zombieList:
                 zombie.model.childs = [zombieModelList[zombie.spriteIndex]]
+
+        for human in humanList:
+                human.model.childs = [humanModelList[human.spriteIndex]]
 
         # Measuring performance
         perfMonitor.update(glfw.get_time())
@@ -360,39 +357,43 @@ if __name__ == "__main__":
         glClear(GL_COLOR_BUFFER_BIT)
 
         # Se llama al metodo del player para detectar colisiones
-        player.collision(zombieList)
+        if(player.isAlive):
+         player.collision(zombieList, humanList)
 
-        # Se llama al metodo del player para actualizar su posicion
+        # Se llama al metodo del jugador para actualizar su estado
         player.update(delta)
+
+        # Muerte del jugador
+        if (player.isAlive == False):
+
+            #player.model.clear()
+            playerNode.childs = [zombieModelList[0]]
+            playerNode.transform = tr.scale(0.1,0.2,1)
+            #instantiateZombie(player.pos[0], player.pos[1], False)
 
         # Movimiento de los zombies
         for zombie in zombieList:
             zombie.pos[1] -= zombie.speed * delta
             zombie.update()
 
-
         # Movimiento de los humanos
         for human in humanList:
-            if (human.goingUpwards):
-                human.pos[1] += human.speed * delta
-            
-            else:
-                human.pos[1] -= human.speed * delta
-
+            human.pos[1] -= human.speed * delta
+            human.collision(zombieList)
             human.update()
+            if human.isAlive == False:
+                instantiateZombie(human.pos[0], human.pos[1], False)
+                human.remove(humanGroup, humanList)
 
-
-        #Borrar zombies
+        #Borrar zombies fuera del mapa
         for zombie in zombieList:
             if zombie.shouldBeRemoved:
                 zombie.remove(zombieGroup, zombieList)
 
-        #Debug de rendimiento
-        """print("###########################################")
-        print("Cantidad de objeto zombie:", len(zombieList))
-        print("Cantidad de zombies en ZombieGroup:", len(zombieGroup.childs))
-        print("Se lleva corriendo:",t1,"segundos")
-        print("###########################################")"""
+        #Borrar los humanos fuera del mapa
+        for human in humanList:
+            if human.shouldBeRemoved:
+                human.remove(humanGroup, humanList)
 
         # Se dibuja el grafo de escena principal
         glUseProgram(pipeline.shaderProgram)

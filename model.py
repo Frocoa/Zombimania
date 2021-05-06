@@ -16,8 +16,7 @@ class Player():
         self.sizeY = sizeY # Escala en y a aplicar al nodo 
         self.radio = 0.1 # distancia para realiozar los calculos de colision
         self.isAlive = True # Estado de salud del jugador
-        self.isInfected = True # Estado de enfermedad del jugador
-        self.deathRolls = 0 # cantidad de veces que el virus "afecta" al jugador
+        self.isInfected = False # Estado de enfermedad del jugador
         self.spriteCooldown = 0.08
         self.spriteIndex = 0
         self.timePassed = 0
@@ -39,10 +38,15 @@ class Player():
             return self.spriteIndex
         else:
             return self.spriteIndex
+    def deathRoll(self, odds):
+        if rand.uniform(0,1) <= odds:
+            self.isAlive = False
 
     def update(self, delta):
         self.t1 = glfw.get_time()
         self.timePassed = self.t1 - self.t0
+
+        print(self.isInfected)
 
         # Si detecta la tecla [D] presionada se mueve hacia la derecha
         if self.controller.is_d_pressed and self.pos[0] <= 0.72 and self.isAlive:
@@ -56,27 +60,26 @@ class Player():
         # Si detecta la tecla [S] presionada y no se ha salido de la pista se mueve hacia abajo
         if self.controller.is_s_pressed and self.pos[1] >= -0.92 and self.isAlive:
             self.pos[1] -= self.vel[1] * delta
-        # Se hace una tirada de infeccion cada frame para ver cuanto aguanta el player
-        if self.isInfected == True and self.isAlive:
-            if(rand.uniform(0.0,100.0) >= 99.9):
-                self.deathRolls += 1
-        # Si la infeccion avanzo demasiado entonces el personaje muere y se transforma en un zombi
-        if self.deathRolls >= 7:
-            self.isAlive = False
-
         # Se le aplica la transformacion de traslado segun la posicion actual
         self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.sizeX, self.sizeY, 1)])
 
-    def collision(self, cargas):
+    def collision(self, zombieList, humanList):
         # Funcion para detectar las colisiones con las cargas
 
         # Se recorren las cargas 
-        for carga in cargas:
-            # si la distancia a la carga es menor que la suma de los radios ha ocurrido en la colision
-            if (self.radio+carga.radio)**2 > ((self.pos[0]- carga.pos[0])**2 + (self.pos[1]-carga.pos[1])**2):
-                #self.isAlive = False
+        for zombie in zombieList:
+            # si la distancia al zombie es menor que la suma de los radios ha ocurrido en la colision
+            if (self.radio+zombie.radio)**2 > ((self.pos[0]- zombie.pos[0])**2 + (self.pos[1]-zombie.pos[1])**2):
+                self.isAlive = False
                 return
-        
+        for human in humanList:
+            # si la distancia al humano es menor que la suma de los radios ha ocurrido en la colision
+            if (self.radio+human.radio)**2 > ((self.pos[0]- human.pos[0])**2 + (self.pos[1]-human.pos[1])**2):
+                print("choque con humano")
+                print ("humano:",human.isInfected)
+                if human.isInfected == True:
+                    self.isInfected = True
+
 class Zombie():
     # Clase de los Zombis
     def __init__(self, posX, posY, size, speed, goingUpwards):
@@ -102,6 +105,10 @@ class Zombie():
     def checkShouldBeRemoved(self):
         if np.absolute(self.pos)[1] >= 1.5:
             self.shouldBeRemoved = True
+    
+    def deathRoll(self, odds):
+        if rand.uniform(0,1) <= odds:
+            self.isAlive = False
 
     def remove(self, zombieGroup, zombieList):
         self.model.childs = []
@@ -111,7 +118,6 @@ class Zombie():
 
 
     def update(self):
-        # Se posiciona el nodo referenciado
         self.t1 = glfw.get_time()
 
         deltaSpriteChange = self.t1 - self.t0
@@ -124,7 +130,6 @@ class Zombie():
         self.checkShouldBeRemoved()
 
 
-
 class Human():
     # CLase para los humanos
     def __init__(self, posX, posY, size, speed, goingUpwards, isInfected):
@@ -133,16 +138,51 @@ class Human():
         self.size = size
         self.speed = speed
         self.isInfected = isInfected
+        self.isAlive = True
+        self.shouldBeRemoved = False
         self.goingUpwards = goingUpwards
         self.model = None
+        self.spriteCooldown = 0.05/np.absolute(speed)
+        self.spriteIndex = 0
+        self.t0 = 0
+        self.t1 = 0
 
         if (self.goingUpwards):
             self.pos[1] = -self.pos[1]
+            self.speed = - self.speed
 
     def set_model(self, new_model):
         # Se le pone un modelo 
         self.model = new_model
 
+    def checkShouldBeRemoved(self):
+        if np.absolute(self.pos)[1] >= 1.5:
+            self.shouldBeRemoved = True
+
+    def deathRoll(self, odds):
+        if rand.uniform(0,1) <= odds:
+            self.isAlive = False
+
+    def remove(self, humanGroup, humanList):
+        self.model.childs = []
+        humanGroup.childs.pop(humanGroup.childs.index(self.model))
+        humanList.pop(humanList.index(self))
+        self.model.clear()
+    
+    def collision(self, zombieList):
+        for zombie in zombieList:
+            if (self.radio+zombie.radio)**2 > ((self.pos[0]- zombie.pos[0])**2 + (self.pos[1]-zombie.pos[1])**2):
+                self.isAlive = False            
+
     def update(self):
+        self.t1 = glfw.get_time()
+
+        deltaSpriteChange = self.t1 - self.t0
+
+        if deltaSpriteChange >= self.spriteCooldown:
+            self.spriteIndex = (self.spriteIndex + 1) % 6
+            self.t0 = self.t1
+
         # Se posiciona el nodo referenciado
         self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, self.size*2, 1)])
+        self.checkShouldBeRemoved()
