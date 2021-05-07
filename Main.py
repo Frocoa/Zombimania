@@ -12,6 +12,12 @@ from grafica.gpu_shape import GPUShape
 import random as rand
 from shapes import *
 from model import *
+import sys
+
+#Z = sys.argv[1]
+#H = sys.argv[2]
+#T = sys.argv[3]
+#P = sys.argv[4]
 
 
 # We will use 32 bits data, so an integer has 4 bytes
@@ -27,6 +33,7 @@ class Controller:
         self.is_s_pressed = False
         self.is_a_pressed = False
         self.is_d_pressed = False
+        self.gameOver = False
 
 # Shader
 class SimpleTextureTransformShaderProgram:
@@ -37,7 +44,7 @@ class SimpleTextureTransformShaderProgram:
             #version 130
 
             uniform mat4 transform;
-            uniform float index;
+            
 
             in vec3 position;
             in vec2 texCoords;
@@ -48,13 +55,15 @@ class SimpleTextureTransformShaderProgram:
             {
                 vec2 newTexCoord;
                 gl_Position = transform * vec4(position, 1.0f);
-                newTexCoord = vec2(texCoords.x/2*index,texCoords.y);
+                newTexCoord = vec2(texCoords.x,texCoords.y);
                 outTexCoords = newTexCoord;
             }
             """
 
         fragment_shader = """
             #version 130
+
+            uniform int index;
 
             in vec2 outTexCoords;
 
@@ -64,7 +73,12 @@ class SimpleTextureTransformShaderProgram:
 
             void main()
             {
-                outColor = texture(samplerTex, outTexCoords);
+                if (index == 1){
+                    outColor = texture(samplerTex, outTexCoords);
+                    }
+                else{
+                    outColor = vec4(0.0,1.0,0.0,0.5);   
+                }
             }
             """
 
@@ -290,12 +304,14 @@ if __name__ == "__main__":
     t_inicial = 0
     
     p = 0.2
-    tamañoHorda = 0
-    tamañoGrupoHumanos = 5
+    tamañoHorda = 1
+    tamañoGrupoHumanos = 8
     zombieCooldown = 2.0
 
     playerAnimPeriod = 0.08
     playerAnimMoment = 0
+
+    alreadyDead = False
     while not glfw.window_should_close(window):
 
         # Variables del tiempo
@@ -353,23 +369,24 @@ if __name__ == "__main__":
         else:
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
-        # Clearing the screen
+        # Clearing the screenwawa
         glClear(GL_COLOR_BUFFER_BIT)
 
         # Se llama al metodo del player para detectar colisiones
         if(player.isAlive):
          player.collision(zombieList, humanList)
+         player.checkWin()
 
         # Se llama al metodo del jugador para actualizar su estado
         player.update(delta)
 
         # Muerte del jugador
-        if (player.isAlive == False):
+        if player.isAlive == False and alreadyDead == False:
 
             #player.model.clear()
-            playerNode.childs = [zombieModelList[0]]
-            playerNode.transform = tr.scale(0.1,0.2,1)
-            #instantiateZombie(player.pos[0], player.pos[1], False)
+            playerNode.childs = []
+            instantiateZombie(player.pos[0], player.pos[1], False)
+            alreadyDead = True
 
         # Movimiento de los zombies
         for zombie in zombieList:
@@ -380,6 +397,7 @@ if __name__ == "__main__":
             else:
                 zombie.pos[0] -= zombie.speed * delta * 0.8
 
+            zombie.collision(humanList)
             zombie.update()
 
         # Movimiento de los humanos
@@ -393,6 +411,7 @@ if __name__ == "__main__":
 
             human.collision(zombieList)
             human.update()
+
             if human.isAlive == False:
                 instantiateZombie(human.pos[0], human.pos[1], False)
                 human.remove(humanGroup, humanList)
@@ -413,7 +432,7 @@ if __name__ == "__main__":
 
         # Se dibuja el grafo de escena con texturas
         glUseProgram(tex_pipeline.shaderProgram)
-        sg.drawSceneGraphNode(tex_scene, tex_pipeline, "transform")
+        sg.drawSceneGraphNodeTex(tex_scene, tex_pipeline, "transform", 1)
 
         # Once the drawing is rendered, buffers are swap so an uncomplete drawing is never seen.
         glfw.swap_buffers(window)

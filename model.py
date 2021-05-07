@@ -61,6 +61,7 @@ class Player():
         # Se le aplica la transformacion de traslado segun la posicion actual
         self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.sizeX, self.sizeY, 1)])
 
+
     def collision(self, zombieList, humanList):
         # Funcion para detectar las colisiones con las cargas
 
@@ -75,6 +76,12 @@ class Player():
             if (self.radio+human.radio)**2 > ((self.pos[0]- human.pos[0])**2 + (self.pos[1]-human.pos[1])**2):
                 if human.isInfected == True:
                     self.isInfected = True
+
+    def checkWin(self):
+        if self.pos[1] >= 0.70 and self.pos[1] <= 1.1:
+            if self.pos[0] >= -1.0 and self.pos[0] <= -0.68:
+                print("Victoria")
+
 
 class Zombie():
     # Clase de los Zombis
@@ -130,6 +137,14 @@ class Zombie():
 
         if rand.uniform(0,1) <= 0.002:
             self.goingRight = not self.goingRight
+
+    def collision(self, humanList):
+        for human in humanList:
+            # si la distancia al humano es menor que la suma de los radios ha ocurrido en la colision
+            if (self.radio+human.radio)**2 > ((self.pos[0]- human.pos[0])**2 + (self.pos[1]-human.pos[1])**2):
+                self.size += 0.02
+                self.radio += 0.01
+
 
     def update(self):
         self.t1 = glfw.get_time()

@@ -241,7 +241,6 @@ def createColorCube(r, g, b):
 
     return Shape(vertices, indices)
 
-
 def createTextureCube(image_filename):
 
     # Defining locations and texture coordinates for each vertex of the shape  

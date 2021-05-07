@@ -39,7 +39,7 @@ def textureSimpleSetup(imgName, sWrapMode, tWrapMode, minFilterMode, maxFilterMo
         format = GL_RGB
     elif image.mode == "RGBA":
         internalFormat = GL_RGBA
-        format = GL_RGBA    
+        format = GL_RGBA
     else:
         print("Image mode not supported.")
         raise Exception()
@@ -62,7 +62,7 @@ class SimpleShaderProgram:
             out vec3 newColor;
             void main()
             {
-                gl_Position = vec4(position, 1.0f);
+                gl_Position = vec4(position, 500.0f);
                 newColor = color;
             }
             """
@@ -267,7 +267,7 @@ class SimpleTextureTransformShaderProgram:
             void main()
             {
                 gl_Position = transform * vec4(position, 1.0f);
-                outTexCoords = newTexCoord;
+                outTexCoords = texCoords;
             }
             """
 

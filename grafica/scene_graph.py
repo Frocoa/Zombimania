@@ -85,6 +85,26 @@ def findPosition(node, name, parentTransform=tr.identity()):
     return None
 
 
+def drawSceneGraphNodeTex(node, pipeline, transformName,index, parentTransform=tr.identity()):
+    assert(isinstance(node, SceneGraphNode))
+
+    # Composing the transformations through this path
+    newTransform = np.matmul(parentTransform, node.transform)
+
+    # If the child node is a leaf, it should be a GPUShape.
+    # Hence, it can be drawn with drawCall
+    if len(node.childs) == 1 and isinstance(node.childs[0], gs.GPUShape):
+        leaf = node.childs[0]
+        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, transformName), 1, GL_TRUE, newTransform)
+        glUniform1i(glGetUniformLocation(pipeline.shaderProgram, "index"), index)
+        pipeline.drawCall(leaf)
+
+    # If the child node is not a leaf, it MUST be a SceneGraphNode,
+    # so this draw function is called recursively
+    else:
+        for child in node.childs:
+            drawSceneGraphNodeTex(child, pipeline, transformName,index, newTransform)
+
 def drawSceneGraphNode(node, pipeline, transformName, parentTransform=tr.identity()):
     assert(isinstance(node, SceneGraphNode))
 
@@ -96,7 +116,6 @@ def drawSceneGraphNode(node, pipeline, transformName, parentTransform=tr.identit
     if len(node.childs) == 1 and isinstance(node.childs[0], gs.GPUShape):
         leaf = node.childs[0]
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, transformName), 1, GL_TRUE, newTransform)
-        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "index"), 2.0)
         pipeline.drawCall(leaf)
 
     # If the child node is not a leaf, it MUST be a SceneGraphNode,
@@ -104,4 +123,3 @@ def drawSceneGraphNode(node, pipeline, transformName, parentTransform=tr.identit
     else:
         for child in node.childs:
             drawSceneGraphNode(child, pipeline, transformName, newTransform)
-
