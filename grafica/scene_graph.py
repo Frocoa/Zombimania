@@ -105,6 +105,27 @@ def drawSceneGraphNodeTex(node, pipeline, transformName,index, parentTransform=t
         for child in node.childs:
             drawSceneGraphNodeTex(child, pipeline, transformName,index, newTransform)
 
+def drawSceneGraphNodeShader(node, pipeline, transformName,transparency,isRed, parentTransform=tr.identity()):
+    assert(isinstance(node, SceneGraphNode))
+
+    # Composing the transformations through this path
+    newTransform = np.matmul(parentTransform, node.transform)
+
+    # If the child node is a leaf, it should be a GPUShape.
+    # Hence, it can be drawn with drawCall
+    if len(node.childs) == 1 and isinstance(node.childs[0], gs.GPUShape):
+        leaf = node.childs[0]
+        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, transformName), 1, GL_TRUE, newTransform)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "transparency"), transparency)
+        glUniform1i(glGetUniformLocation(pipeline.shaderProgram, "isRed"), isRed)
+        pipeline.drawCall(leaf)
+
+    # If the child node is not a leaf, it MUST be a SceneGraphNode,
+    # so this draw function is called recursively
+    else:
+        for child in node.childs:
+            drawSceneGraphNode(child, pipeline, transformName,transparency,isRed, newTransform)
+
 def drawSceneGraphNode(node, pipeline, transformName, parentTransform=tr.identity()):
     assert(isinstance(node, SceneGraphNode))
 

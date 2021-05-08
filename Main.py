@@ -28,12 +28,12 @@ SIZE_IN_BYTES = 4
 # Clase controlador con variables para manejar el estado de ciertos botones
 class Controller:
     def __init__(self):
-        self.fillPolygon = True
         self.is_w_pressed = False
         self.is_s_pressed = False
         self.is_a_pressed = False
         self.is_d_pressed = False
         self.gameOver = False
+        self.useGoogles = False
 
 # Shader
 class SimpleTextureTransformShaderProgram:
@@ -74,7 +74,9 @@ class SimpleTextureTransformShaderProgram:
             void main()
             {
                 if (index == 1){
-                    outColor = texture(samplerTex, outTexCoords);
+                    vec2 vector;
+                    vector = vec2(outTexCoords.x, outTexCoords.y);
+                    outColor = texture(samplerTex, vector);
                     }
                 else{
                     outColor = vec4(0.0,1.0,0.0,0.5);   
@@ -156,7 +158,7 @@ def on_key(window, key, scancode, action, mods):
 
     # Caso de detecar la barra espaciadora, se cambia el metodo de dibujo
     if key == glfw.KEY_SPACE and action ==glfw.PRESS:
-        controller.fillPolygon = not controller.fillPolygon
+        controller.useGoogles = not controller.useGoogles
 
     # Caso en que se cierra la ventana
     elif key == glfw.KEY_ESCAPE and action ==glfw.PRESS:
@@ -188,10 +190,9 @@ if __name__ == "__main__":
     # Pipeline para dibujar shapes con colores interpolados
     pipeline = es.SimpleTransformShaderProgram()
     # Pipeline para dibujar shapes con texturas
-
     tex_pipeline = SimpleTextureTransformShaderProgram()
-
-    #tex2_pipeline = SimpleTextureTransformShaderProgram()
+    # Pipeline para las transiciones de colores
+    colorPipeline = es.SimpleTransformShaderProgram2()
 
     # Setting up the clear screen color
     glClearColor(0.051, 0.09, 0.109, 1.0)
@@ -200,8 +201,6 @@ if __name__ == "__main__":
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-
-    
 
     # Grafo de escena del background
     mainScene = crearEscenario(pipeline)
@@ -231,6 +230,15 @@ if __name__ == "__main__":
         humanModelList += [model]
    
 
+
+
+    # Se crea el nodo de la pantalla roja
+    pantallaRoja = createGPUShape(bs.createColorQuad(0.5,0.0,0.0), colorPipeline)
+
+    pantallaNode = sg.SceneGraphNode("pantalla")
+    pantallaNode.transform = tr.scale(2,2,1)
+    pantallaNode.childs = [pantallaRoja]
+
     # Se crea el nodo del player
     playerNode = sg.SceneGraphNode("player")
     playerNode.childs = [playerModelList[0]]
@@ -256,6 +264,7 @@ if __name__ == "__main__":
     # Lista con todas los zombies
     zombieList = []
     humanList = []
+    infectedList= []
 
     # Crear un zombie
     def instantiateZombie(x,y,goingUpwards):
@@ -312,6 +321,7 @@ if __name__ == "__main__":
     playerAnimMoment = 0
 
     alreadyDead = False
+    transparency = 10.0
     while not glfw.window_should_close(window):
 
         # Variables del tiempo
@@ -363,12 +373,6 @@ if __name__ == "__main__":
             if (player.isAlive):
                 changePlayerFrame(player.nextSpriteIndex())
 
-        # Filling or not the shapes depending on the controller state
-        if (controller.fillPolygon):
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-        else:
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-
         # Clearing the screenwawa
         glClear(GL_COLOR_BUFFER_BIT)
 
@@ -416,6 +420,10 @@ if __name__ == "__main__":
                 instantiateZombie(human.pos[0], human.pos[1], False)
                 human.remove(humanGroup, humanList)
 
+            if human.isInfected == True:
+                infectedList += [human]    
+
+
         #Borrar zombies fuera del mapa
         for zombie in zombieList:
             if zombie.shouldBeRemoved:
@@ -433,6 +441,26 @@ if __name__ == "__main__":
         # Se dibuja el grafo de escena con texturas
         glUseProgram(tex_pipeline.shaderProgram)
         sg.drawSceneGraphNodeTex(tex_scene, tex_pipeline, "transform", 1)
+
+        if controller.useGoogles == True:
+            for human in humanList:
+                if human in infectedList:
+                    sg.drawSceneGraphNodeTex(human.model, tex_pipeline, "transform", 0)
+            if player.isInfected == True:
+                sg.drawSceneGraphNodeTex(player.model, tex_pipeline, "transform", 0)
+
+        # Se dibuja la pantalla de color
+        glUseProgram(colorPipeline.shaderProgram)
+        if(player.isAlive == False):
+            sg.drawSceneGraphNodeShader(pantallaNode, colorPipeline, "transform", transparency, 1)
+            if transparency > 1.0:
+                transparency -= 0.008
+
+        elif(player.isInfected == True):
+            transparency = 4.0
+            sg.drawSceneGraphNodeShader(pantallaNode, colorPipeline, "transform", transparency, 0)
+
+
 
         # Once the drawing is rendered, buffers are swap so an uncomplete drawing is never seen.
         glfw.swap_buffers(window)
