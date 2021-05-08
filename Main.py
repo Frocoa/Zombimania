@@ -32,6 +32,8 @@ class Controller:
         self.is_s_pressed = False
         self.is_a_pressed = False
         self.is_d_pressed = False
+        self.is_e_pressed = False
+        self.is_q_pressed = False
         self.gameOver = False
         self.useGoogles = False
 
@@ -156,6 +158,20 @@ def on_key(window, key, scancode, action, mods):
         elif action == glfw.RELEASE:
             controller.is_d_pressed = False
 
+    # Caso de detectar la tecla [E], actualiza estado de variable
+    if key == glfw.KEY_E:
+        if action ==glfw.PRESS:
+            controller.is_e_pressed = True
+        elif action == glfw.RELEASE:
+            controller.is_e_pressed = False
+
+    # Caso de detectar la tecla [Q], actualiza estado de variable
+    if key == glfw.KEY_Q:
+        if action ==glfw.PRESS:
+            controller.is_q_pressed = True
+        elif action == glfw.RELEASE:
+            controller.is_q_pressed = False                   
+
     # Caso de detecar la barra espaciadora, se cambia el metodo de dibujo
     if key == glfw.KEY_SPACE and action ==glfw.PRESS:
         controller.useGoogles = not controller.useGoogles
@@ -233,7 +249,8 @@ if __name__ == "__main__":
 
 
     # Se crea el nodo de la pantalla roja
-    pantallaRoja = createGPUShape(bs.createColorQuad(0.5,0.0,0.0), colorPipeline)
+    pantallaRoja = createGPUShape(bs.createColorQuad(0.35,0.0,0.0), colorPipeline)
+    #gameOver = crearGameOver(colorPipeline)
 
     pantallaNode = sg.SceneGraphNode("pantalla")
     pantallaNode.transform = tr.scale(2,2,1)
@@ -297,7 +314,7 @@ if __name__ == "__main__":
 
     def changePlayerFrame(frameIndex):
         # Se pasa al siguiente frame del jugador
-        if player.isInfected == False:
+        if player.dashTimePassed >= player.dashCooldown:
             playerNode.childs = [playerModelList[frameIndex]]
 
         else:
@@ -313,8 +330,8 @@ if __name__ == "__main__":
     t_inicial = 0
     
     p = 0.2
-    tamañoHorda = 1
-    tamañoGrupoHumanos = 8
+    tamañoHorda = 0
+    tamañoGrupoHumanos = 10
     zombieCooldown = 2.0
 
     playerAnimPeriod = 0.08
@@ -377,7 +394,7 @@ if __name__ == "__main__":
         glClear(GL_COLOR_BUFFER_BIT)
 
         # Se llama al metodo del player para detectar colisiones
-        if(player.isAlive):
+        if(player.isAlive and not player.dashing):
          player.collision(zombieList, humanList)
          player.checkWin()
 
@@ -413,7 +430,7 @@ if __name__ == "__main__":
             else:
                 human.pos[0] -= human.speed * delta * 0.8    
 
-            human.collision(zombieList)
+            human.collision(zombieList, humanList)
             human.update()
 
             if human.isAlive == False:

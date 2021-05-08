@@ -124,7 +124,7 @@ def drawSceneGraphNodeShader(node, pipeline, transformName,transparency,isRed, p
     # so this draw function is called recursively
     else:
         for child in node.childs:
-            drawSceneGraphNode(child, pipeline, transformName,transparency,isRed, newTransform)
+            drawSceneGraphNodeShader(child, pipeline, transformName,transparency,isRed, newTransform)
 
 def drawSceneGraphNode(node, pipeline, transformName, parentTransform=tr.identity()):
     assert(isinstance(node, SceneGraphNode))
