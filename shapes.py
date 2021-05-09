@@ -25,7 +25,6 @@ def createTextureGPUShape(shape, pipeline, path):
         path, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST)
     return gpuShape
 
-
 def crearGameOver(pipeline):
     gpuG = createGPUShape(bs.createLetterG(), pipeline)
     gpuA = createGPUShape(bs.createLetterA(), pipeline)
@@ -142,7 +141,7 @@ def crearVictory(pipeline):
 
     # Se crea el nodo del Game Over
     victoryNode = sg.SceneGraphNode("Victory")
-    victoryNode.transform = tr.matmul([tr.translate(0.22, 0.2, 0.0),tr.scale(0.15,0.15,0)])
+    victoryNode.transform = tr.matmul([tr.translate(0.22, 0., 0.0),tr.scale(0.15,0.15,0)])
     victoryNode.childs = [vNode, iNode, cNode, tNode, oNode, rNode, yNode, rNode2, oNode2, yNode2, aNode, lNode, eNode]
 
     return victoryNode
@@ -185,6 +184,11 @@ def crearEscenario(pipeline):
     disenoCuadradoNode.transform = tr.translate(0.0, 0.6, 0.0 )  
     disenoCuadradoNode.childs = [cuadradoClaroNode, cuadradoOscuroNode]
 
+    # Nodo con el diseño de cuadrados2
+    disenoCuadradoNode2 = sg.SceneGraphNode("diseno2")
+    disenoCuadradoNode2.transform = tr.translate(0.0, -0.8, 0.0 )  
+    disenoCuadradoNode2.childs = [cuadradoClaroNode, cuadradoOscuroNode]
+
     # La salida
     salidaNode = sg.SceneGraphNode("salida")
     salidaNode.transform = tr.matmul([tr.translate(-0.9,0.8,0), tr.scale(0.3,0.4,1.0)])
@@ -192,12 +196,27 @@ def crearEscenario(pipeline):
 
     # Nodo que junta todo lo del escenario
     escenarioNode = sg.SceneGraphNode("escenario")
-    escenarioNode.childs = [murallaNode, sueloNode, sueloOscuroNode, disenoCuadradoNode, salidaNode]
+    escenarioNode.childs = [murallaNode, sueloNode, sueloOscuroNode, disenoCuadradoNode, disenoCuadradoNode2]
 
 
     return escenarioNode
 
-def crearSalida(pipeline):
-    gpuGrayQuad = createGPUShape(bs.createColorQuad(1,1,1), pipeline)
+def crearSalida(tex_pipeline):
+    model = createTextureGPUShape(bs.createTextureQuad(1,1), tex_pipeline, "sprites/salida.png")
+    salidaNode = sg.SceneGraphNode("salida")
+    salidaNode.transform = tr.matmul([tr.translate(-0.74,0.8,0), tr.scale(0.3,0.4,1.0)])
+    salidaNode.childs = [model]
     return salidaNode
 
+def crearDecoracion(tex_pipeline):
+    shapeQuestionBoxes = bs.createTextureQuad(1,2)
+    gpuDecoration = es.GPUShape().initBuffers()
+    tex_pipeline.setupVAO(gpuDecoration)
+    gpuDecoration.fillBuffers(shapeQuestionBoxes.vertices, shapeQuestionBoxes.indices, GL_STATIC_DRAW)
+    gpuDecoration.texture = es.textureSimpleSetup(
+        "sprites/decoracion.png", GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST)
+
+    decoracionNode = sg.SceneGraphNode("decoracion")
+    decoracionNode.transform = tr.scale(1.5,2.4,0)
+    decoracionNode.childs = [gpuDecoration]
+    return decoracionNode

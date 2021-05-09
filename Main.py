@@ -34,93 +34,8 @@ class Controller:
         self.is_d_pressed = False
         self.is_e_pressed = False
         self.is_q_pressed = False
-        self.gameOver = False
+        self.gameWon = False
         self.useGoogles = False
-
-# Shader
-class SimpleTextureTransformShaderProgram:
-
-    def __init__(self):
-
-        vertex_shader = """
-            #version 130
-
-            uniform mat4 transform;
-            
-
-            in vec3 position;
-            in vec2 texCoords;
-
-            out vec2 outTexCoords;
-
-            void main()
-            {
-                vec2 newTexCoord;
-                gl_Position = transform * vec4(position, 1.0f);
-                newTexCoord = vec2(texCoords.x,texCoords.y);
-                outTexCoords = newTexCoord;
-            }
-            """
-
-        fragment_shader = """
-            #version 130
-
-            uniform int index;
-
-            in vec2 outTexCoords;
-
-            out vec4 outColor;
-
-            uniform sampler2D samplerTex;
-
-            void main()
-            {
-                if (index == 1){
-                    vec2 vector;
-                    vector = vec2(outTexCoords.x, outTexCoords.y);
-                    outColor = texture(samplerTex, vector);
-                    }
-                else{
-                    outColor = vec4(0.0,1.0,0.0,0.5);   
-                }
-            }
-            """
-
-        # Compiling our shader program
-        self.shaderProgram = OpenGL.GL.shaders.compileProgram(
-            OpenGL.GL.shaders.compileShader(vertex_shader, GL_VERTEX_SHADER),
-            OpenGL.GL.shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER))
-
-
-    def setupVAO(self, gpuShape):
-
-        glBindVertexArray(gpuShape.vao)
-
-        glBindBuffer(GL_ARRAY_BUFFER, gpuShape.vbo)
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gpuShape.ebo)
-
-        # 3d vertices + 2d texture coordinates => 3*4 + 2*4 = 20 bytes
-        position = glGetAttribLocation(self.shaderProgram, "position")
-        glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(position)
-        
-        texCoords = glGetAttribLocation(self.shaderProgram, "texCoords")
-        glVertexAttribPointer(texCoords, 2, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(3 * SIZE_IN_BYTES))
-        glEnableVertexAttribArray(texCoords)
-
-        # Unbinding current vao
-        glBindVertexArray(0)
-
-
-    def drawCall(self, gpuShape, mode=GL_TRIANGLES):
-        assert isinstance(gpuShape, GPUShape)
-
-        glBindVertexArray(gpuShape.vao)
-        glBindTexture(GL_TEXTURE_2D, gpuShape.texture)
-        glDrawElements(mode, gpuShape.size, GL_UNSIGNED_INT, None)
-
-        # Unbind the current VAO
-        glBindVertexArray(0)
 
 # we will use the global controller as communication with the callback function
 controller = Controller()
@@ -206,10 +121,11 @@ if __name__ == "__main__":
     # Pipeline para dibujar shapes con colores interpolados
     pipeline = es.SimpleTransformShaderProgram()
     # Pipeline para dibujar shapes con texturas
-    tex_pipeline = SimpleTextureTransformShaderProgram()
+    tex_pipeline = es.SimpleTextureTransformShaderProgram()
     # Pipeline para las transiciones de colores
-    colorPipeline = es.SimpleTransformShaderProgram2()
-
+    colorPipeline = es.ScreenEffectShaderProgram()
+    # Pipeline para el shader cuando estas infectado
+    infectedPipeline = es.InfectedTransformShaderProgram()
     # Setting up the clear screen color
     glClearColor(0.051, 0.09, 0.109, 1.0)
 
@@ -250,11 +166,23 @@ if __name__ == "__main__":
 
     # Se crea el nodo de la pantalla roja
     pantallaRoja = createGPUShape(bs.createColorQuad(0.35,0.0,0.0), colorPipeline)
-    #gameOver = crearGameOver(colorPipeline)
+    victory = crearVictory(colorPipeline)
+    gameOver = crearGameOver(colorPipeline)
 
     pantallaNode = sg.SceneGraphNode("pantalla")
     pantallaNode.transform = tr.scale(2,2,1)
     pantallaNode.childs = [pantallaRoja]
+
+    victoryNode = sg.SceneGraphNode("victory")
+    victoryNode.transform = tr.translate(2.0,0,0) # Para evitar que salga un frame en el centro antes de tiempo
+    victoryNode.childs = [victory]
+
+    gameOverNode = sg.SceneGraphNode("gameOver")
+    gameOverNode.transform = tr.translate(2.0, 0.0, 0.0)  # Para evitar que salga un frame en el centro antes de tiempo
+    gameOverNode.childs = [gameOver]
+
+    hudNode = sg.SceneGraphNode("hud")
+    hudNode.childs = [pantallaNode]
 
     # Se crea el nodo del player
     playerNode = sg.SceneGraphNode("player")
@@ -270,7 +198,7 @@ if __name__ == "__main__":
 
     # Se crean el grafo de escena con textura y se agregan los zombies
     tex_scene = sg.SceneGraphNode("textureScene")
-    tex_scene.childs = [playerNode,zombieGroup, humanGroup]
+    tex_scene.childs = [crearDecoracion(tex_pipeline),crearSalida(tex_pipeline),playerNode,zombieGroup, humanGroup]
 
     #Player
     player = Player(0.08, 0.16)
@@ -330,8 +258,8 @@ if __name__ == "__main__":
     t_inicial = 0
     
     p = 0.2
-    tamañoHorda = 0
-    tamañoGrupoHumanos = 10
+    tamañoHorda = 2
+    tamañoGrupoHumanos = 2
     zombieCooldown = 2.0
 
     playerAnimPeriod = 0.08
@@ -339,6 +267,8 @@ if __name__ == "__main__":
 
     alreadyDead = False
     transparency = 10.0
+    victoryPos = 10.0
+    alreadyWon = False
     while not glfw.window_should_close(window):
 
         # Variables del tiempo
@@ -387,14 +317,14 @@ if __name__ == "__main__":
 
         # El personaje tiene animacion solo al moverse
         if (controller.is_a_pressed or controller.is_d_pressed or controller.is_s_pressed or controller.is_w_pressed):
-            if (player.isAlive):
+            if (player.isAlive and not controller.gameWon):
                 changePlayerFrame(player.nextSpriteIndex())
 
         # Clearing the screenwawa
         glClear(GL_COLOR_BUFFER_BIT)
 
         # Se llama al metodo del player para detectar colisiones
-        if(player.isAlive and not player.dashing):
+        if(player.isAlive and not player.dashing and not controller.gameWon):
          player.collision(zombieList, humanList)
          player.checkWin()
 
@@ -403,11 +333,17 @@ if __name__ == "__main__":
 
         # Muerte del jugador
         if player.isAlive == False and alreadyDead == False:
-
-            #player.model.clear()
             playerNode.childs = []
+            hudNode.childs += [gameOverNode]
             instantiateZombie(player.pos[0], player.pos[1], False)
+
             alreadyDead = True
+
+        #Se añade una vez la frase de victoria
+        if(controller.gameWon == True and alreadyWon == False):
+            hudNode.childs += [victoryNode]
+            playerNode.childs = []
+            alreadyWon = True
 
         # Movimiento de los zombies
         for zombie in zombieList:
@@ -446,14 +382,19 @@ if __name__ == "__main__":
             if zombie.shouldBeRemoved:
                 zombie.remove(zombieGroup, zombieList)
 
-        #Borrar los humanos fuera del mapa
+        #Borrar los humanos fuera del mapaw
         for human in humanList:
             if human.shouldBeRemoved:
                 human.remove(humanGroup, humanList)
 
-        # Se dibuja el grafo de escena principal
-        glUseProgram(pipeline.shaderProgram)
-        sg.drawSceneGraphNode(mainScene, pipeline, "transform")
+        
+        # Se dibuja el grafo de escena principal w
+        if player.isInfected:
+            glUseProgram(infectedPipeline.shaderProgram)
+            sg.drawSceneGraphInfected(mainScene,pipeline,"transform", infectedIndex = 2.0)
+        else:
+            glUseProgram(pipeline.shaderProgram)
+            sg.drawSceneGraphNode(mainScene, pipeline, "transform")
 
         # Se dibuja el grafo de escena con texturas
         glUseProgram(tex_pipeline.shaderProgram)
@@ -469,12 +410,23 @@ if __name__ == "__main__":
         # Se dibuja la pantalla de color
         glUseProgram(colorPipeline.shaderProgram)
         if(player.isAlive == False):
-            sg.drawSceneGraphNodeShader(pantallaNode, colorPipeline, "transform", transparency, 1)
+            sg.drawSceneGraphNodeShader(hudNode, colorPipeline, "transform", transparency, 1)
+            palabra = sg.findNode(hudNode, "gameOver")
+            palabra.transform = tr.translate(transparency-0.95,0,0)
+             
             if transparency > 1.0:
                 transparency -= 0.008
 
+        elif(controller.gameWon == True and player.isAlive == True):
+            sg.drawSceneGraphNodeShader(victoryNode, colorPipeline, "transform", 1, 2)
+            palabra = sg.findNode(hudNode, "victory")
+            palabra.transform = tr.translate(victoryPos-0.97,0.1,0)
+
+            if victoryPos > 1.0:
+                victoryPos -= 0.02
+
         elif(player.isInfected == True):
-            transparency = 4.0
+            transparency = 6.0
             sg.drawSceneGraphNodeShader(pantallaNode, colorPipeline, "transform", transparency, 0)
 
 

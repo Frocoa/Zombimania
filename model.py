@@ -135,7 +135,7 @@ class Player():
     def checkWin(self):
         if self.pos[1] >= 0.70 and self.pos[1] <= 1.1:
             if self.pos[0] >= -1.0 and self.pos[0] <= -0.68:
-                print("Victoria")
+                self.controller.gameWon = True
 
 
 class Zombie():

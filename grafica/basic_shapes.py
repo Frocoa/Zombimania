@@ -85,21 +85,30 @@ def createRainbowTriangle():
     return Shape(vertices, indices)
 
 
-def createRainbowQuad():
+def createRainbowCircle(N):
 
-    # Defining the location and colors of each vertex  of the shape
-    vertices = [
-    #   positions        colors
-        -0.5, -0.5, 0.0,  1.0, 0.0, 0.0,
-         0.5, -0.5, 0.0,  0.0, 1.0, 0.0,
-         0.5,  0.5, 0.0,  0.0, 0.0, 1.0,
-        -0.5,  0.5, 0.0,  1.0, 1.0, 1.0]
+    # First vertex at the center, white color
+    vertices = [0, 0, 0, 1.0, 1.0, 1.0]
+    indices = []
 
-    # Defining connections among vertices
-    # We have a triangle every 3 indices specified
-    indices = [
-        0, 1, 2,
-        2, 3, 0]
+    dtheta = 2 * math.pi / N
+
+    for i in range(N):
+        theta = i * dtheta
+
+        vertices += [
+            # vertex coordinates
+             math.cos(theta*3.14*i/360)*math.cos(theta*2*3.14*i/360),  math.cos(theta*3.14*i/360)*math.sin(theta*2*3.14*i/360), 0,
+
+            # color generates varying between 0 and 1
+                  math.sin(theta),       math.cos(theta), 0]
+
+        # A triangle is created using the center, this and the next vertex
+        indices += [0, i, i+1]
+
+    # The final triangle connects back to the second vertex
+    indices += [0, N, 1]
+
 
     return Shape(vertices, indices)
 
