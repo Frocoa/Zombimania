@@ -465,4 +465,18 @@ def createLetterL():
                 2, 3, 1,
                 4, 2, 6,
                 6, 4, 5]
+    return Shape(vertices, indices)
+
+
+def createLine():
+    vertices = [
+                0.5, 0.5, 0.0, 1.0, 0.5, 1.0,
+                -0.5, -0.5, 0.0, 1.0, 1.0, 1.0]
+              
+    indices = [0, 1]
+    
     return Shape(vertices, indices)            
+
+            
+
+

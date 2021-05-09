@@ -269,6 +269,12 @@ if __name__ == "__main__":
     transparency = 10.0
     victoryPos = 10.0
     alreadyWon = False
+
+    shearingEffect = [15.0, 13.0]
+
+    glLineWidth(3)
+
+    infectedFloat = 0.0
     while not glfw.window_should_close(window):
 
         # Variables del tiempo
@@ -389,9 +395,10 @@ if __name__ == "__main__":
 
         
         # Se dibuja el grafo de escena principal w
-        if player.isInfected:
+        if player.isInfected and player.isAlive:
             glUseProgram(infectedPipeline.shaderProgram)
-            sg.drawSceneGraphInfected(mainScene,pipeline,"transform", infectedIndex = 2.0)
+            sg.drawSceneGraphInfected(mainScene,infectedPipeline,"transform", infectedFloat)
+            infectedFloat += 0.01
         else:
             glUseProgram(pipeline.shaderProgram)
             sg.drawSceneGraphNode(mainScene, pipeline, "transform")
@@ -412,10 +419,16 @@ if __name__ == "__main__":
         if(player.isAlive == False):
             sg.drawSceneGraphNodeShader(hudNode, colorPipeline, "transform", transparency, 1)
             palabra = sg.findNode(hudNode, "gameOver")
-            palabra.transform = tr.translate(transparency-0.95,0,0)
+            palabra.transform = tr.matmul([tr.translate(transparency-0.95,0,0), tr.shearing(shearingEffect[0],0,0,0,0,0)])
              
             if transparency > 1.0:
-                transparency -= 0.008
+                transparency -= 3*delta
+            else:
+                shearingEffect[0] = 0    
+
+            if shearingEffect[0] >= 0:
+                shearingEffect[0] -= 4.5*delta
+                
 
         elif(controller.gameWon == True and player.isAlive == True):
             sg.drawSceneGraphNodeShader(victoryNode, colorPipeline, "transform", 1, 2)
@@ -423,7 +436,7 @@ if __name__ == "__main__":
             palabra.transform = tr.translate(victoryPos-0.97,0.1,0)
 
             if victoryPos > 1.0:
-                victoryPos -= 0.02
+                victoryPos -= 5.5*delta
 
         elif(player.isInfected == True):
             transparency = 6.0
@@ -431,7 +444,7 @@ if __name__ == "__main__":
 
 
 
-        # Once the drawing is rendered, buffers are swap so an uncomplete drawing is never seen.
+        # Once the drawing is rendered, buffe01rs are swap so an uncomplete drawing is never seen.
         glfw.swap_buffers(window)
 
     # freeing GPU memory

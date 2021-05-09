@@ -137,7 +137,10 @@ def drawSceneGraphNode(node, pipeline, transformName, parentTransform=tr.identit
     if len(node.childs) == 1 and isinstance(node.childs[0], gs.GPUShape):
         leaf = node.childs[0]
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, transformName), 1, GL_TRUE, newTransform)
-        pipeline.drawCall(leaf)
+        if node.name == "linea":
+            pipeline.drawCall(leaf, mode = GL_LINES)
+        else:
+            pipeline.drawCall(leaf)    
 
     # If the child node is not a leaf, it MUST be a SceneGraphNode,
     # so this draw function is called recursively
@@ -145,7 +148,8 @@ def drawSceneGraphNode(node, pipeline, transformName, parentTransform=tr.identit
         for child in node.childs:
             drawSceneGraphNode(child, pipeline, transformName, newTransform)
 
-def drawSceneGraphInfected(node,pipeline, transformName, infectedIndex, parentTransform = tr.identity()):
+
+def drawSceneGraphInfected(node, pipeline, transformName,infectedIndex, parentTransform=tr.identity()):
     assert(isinstance(node, SceneGraphNode))
 
     # Composing the transformations through this path
@@ -163,4 +167,4 @@ def drawSceneGraphInfected(node,pipeline, transformName, infectedIndex, parentTr
     # so this draw function is called recursively
     else:
         for child in node.childs:
-            drawSceneGraphInfected(child, pipeline, transformName, infectedIndex, newTransform)            
+            drawSceneGraphInfected(child, pipeline, transformName,infectedIndex, newTransform)

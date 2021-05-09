@@ -239,7 +239,7 @@ class SimpleTextureTransformShaderProgram:
                 else{
                     float transparency;
                     transparency = texture(samplerTex, outTexCoords).w;
-                    outColor = vec4(0.0,1.0,0.0,transparency);   
+                    outColor = vec4(0.0,1.0,0.0,transparency/2.0);   
                 }
             }
             """
@@ -280,40 +280,38 @@ class SimpleTextureTransformShaderProgram:
         # Unbind the current VAO
         glBindVertexArray(0)
 
+
+
 class InfectedTransformShaderProgram:
 
     def __init__(self):
 
         vertex_shader = """
             #version 130
-
-            uniform mat4 transform;
             
+            uniform mat4 transform;
 
             in vec3 position;
-            in vec2 texCoords;
+            in vec3 color;
 
-            out vec2 outTexCoords;
+            out vec3 newColor;
 
             void main()
             {
-                vec2 newTexCoord;
                 gl_Position = transform * vec4(position, 1.0f);
-                newTexCoord = vec2(texCoords.x,texCoords.y);
-                outTexCoords = newTexCoord;
+                newColor = color;
             }
             """
 
         fragment_shader = """
             #version 130
 
-            //vec3 crazyInnator(in vec3 color, in float i){
-            //    vec3 crazyColor;
-            //
-            //    crazyColor = vec3(color.b, color.r * cos(i), color.g);
-            //    return crazyColor;
-            //
-            //}
+            vec3 crazyInnator(in vec3 color, in float i){
+                vec3 crazyColor;
+                crazyColor = vec3(cos(i)*color.r , sin(i)*color.g, cos(i)*color.b);
+                return crazyColor;
+            
+            }
 
             uniform float infectedIndex;
 
@@ -324,15 +322,9 @@ class InfectedTransformShaderProgram:
             void main()
             {
                 vec3 color;
-                vec3 crazyColor;
-                vec3 finalColor;
-                color = vec3(newColor.r, newColor.g, newColor.b);   
-                crazyColor = color;
-                finalColor = crazyColor*infectedIndex;
-                outColor = vec4(finalColor,1.0);
+                color = crazyInnator(newColor, infectedIndex);
+                outColor = vec4(color, 1.0f);
             }
-
-
             """
 
         self.shaderProgram = OpenGL.GL.shaders.compileProgram(

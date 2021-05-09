@@ -58,7 +58,8 @@ class Player():
                 if self.pos[0] < 0.72:
                     self.pos[0] += 1.7*delta        
 
-            self.model.transform = tr.matmul([tr.translate(self.pos[0],self.pos[1],0), tr.rotationZ(0.1*self.dashingMoment*15), tr.scale(self.sizeX, self.sizeY, 1)])
+            self.model.transform = tr.matmul([tr.translate(self.pos[0],self.pos[1],0), tr.rotationZ(0.1*self.dashingMoment*15),\
+                                              tr.scale(self.sizeX, self.sizeY, 1)])
 
     def set_model(self, new_model):
         # Se obtiene una referencia a uno nodo
@@ -77,7 +78,7 @@ class Player():
             return self.spriteIndex
 
     def deathRoll(self, odds):
-        if rand.uniform(0,1) <= odds:
+        if rand.uniform(0,1) <= odds and not self.controller.gameWon:
             self.isAlive = False
 
     def update(self, delta):
