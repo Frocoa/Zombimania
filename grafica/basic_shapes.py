@@ -18,86 +18,29 @@ class Shape:
 def clamp(num, min_value, max_value):
    return max(min(num, max_value), min_value)
 
-def merge(destinationShape, strideSize, sourceShape):
 
-    # current vertices are an offset for indices refering to vertices of the new shape
-    offset = len(destinationShape.vertices)
-    destinationShape.vertices += sourceShape.vertices
-    destinationShape.indices += [(offset/strideSize) + index for index in sourceShape.indices]
+def createWings(n):  #Al poner un n mas alto las alas parecen mas como de insecto
 
+    vertices = [0.0, 0.0, 0.0,  0.8, 0.643, 0.24]
 
-def applyOffset(shape, stride, offset):
-
-    numberOfVertices = len(shape.vertices)//stride
-
-    for i in range(numberOfVertices):
-        index = i * stride
-        shape.vertices[index]     += offset[0]
-        shape.vertices[index + 1] += offset[1]
-        shape.vertices[index + 2] += offset[2]
-
-
-def scaleVertices(shape, stride, scaleFactor):
-
-    numberOfVertices = len(shape.vertices) // stride
-
-    for i in range(numberOfVertices):
-        index = i * stride
-        shape.vertices[index]     *= scaleFactor[0]
-        shape.vertices[index + 1] *= scaleFactor[1]
-        shape.vertices[index + 2] *= scaleFactor[2]
-
-
-def createAxis(length=1.0):
-
-    # Defining the location and colors of each vertex  of the shape
-    vertices = [
-    #    positions        colors
-        -length,  0.0,  0.0, 0.0, 0.0, 0.0,
-         length,  0.0,  0.0, 1.0, 0.0, 0.0,
-
-         0.0, -length,  0.0, 0.0, 0.0, 0.0,
-         0.0,  length,  0.0, 0.0, 1.0, 0.0,
-
-         0.0,  0.0, -length, 0.0, 0.0, 0.0,
-         0.0,  0.0,  length, 0.0, 0.0, 1.0]
-
-    # This shape is meant to be drawn with GL_LINES,
-    # i.e. every 2 indices, we have 1 line.
-    indices = [
-         0, 1,
-         2, 3,
-         4, 5]
-
-    return Shape(vertices, indices)
-
-def createRainbowCircle(N):
-
-    # First vertex at the center, white color
-    vertices = [0, 0, 0, 1.0, 1.0, 1.0]
     indices = []
+            #0, 1, 4,
+            #2, 3, 4]         
 
-    dtheta = 2 * math.pi / N
+    for i in range(n-2):
+        i += 1
+        vertices += [       #vertices                  #Color dorado
+                            -0.5,  0.5-i*0.5/n,  0.0,  0.8, 0.643, 0.24,
+                    0.0 - (0.5)/i, 0.5-i*0.5/n,  0.0,  0.8, 0.643, 0.24,
 
-    for i in range(N):
-        t = i * dtheta
+                              0.5,  0.5-i*0.5/n, 0.0,  0.8, 0.643, 0.24,
+                    0.0 + (0.5/i),  0.5-i*0.5/n, 0.0,  0.8, 0.643, 0.24]
 
-        vertices += [
-            # vertex coordinates
-             math.cos(t*3.14*i/360)*math.cos(t*2*3.14*i/360),  math.cos(t*3.14*i/360)*math.cos(t*2*3.14*i/360), 0,
+        indices += [ 
+                1+4*(i-1), 2+4*(i-1), 0,
+                3+4*(i-1), 4+4*(i-1), 0]
 
-            # color generates varying between 0 and 1
-                  math.cos(t),       math.cos(t), 0]
-
-        # A triangle is created using the center, this and the next vertex
-        indices += [0, i, i+1]
-
-    # The final triangle connects back to the second vertex
-    indices += [0, N, 1]
-
-
-    return Shape(vertices, indices)
-
+    return Shape(vertices, indices)                         
 
 def createColorQuad(r, g, b):
 
@@ -151,6 +94,54 @@ def createTextureQuad(nx, ny):
          2, 3, 0]
 
     return Shape(vertices, indices)
+
+def createTextureSkull():
+    vertices = [
+        -0.3666, 0.3666, 0.0, 0.0, 0,
+        0.3666, 0.3666, 0.0, 0.6111, 0,
+        -0.3666, -0.23, 0.0, 0.0, 1,
+        0.3666, -0.23, 0.0, 0.6111, 1,
+
+        -0.4333, 0.5, 0.0, 0.6666, 0.4444,
+        -0.1666, 0.5, 0.0, 0.8888, 0.4444,
+        -0.4333, 0.2333, 0.0, 0.6666, 0.8888,
+        -0.1666, 0.2333, 0.0, 0.8888, 0.8888,
+        
+        0.1666, 0.5, 0.0, 0.6666, 0.4444,
+        0.4333, 0.5, 0.0, 0.8888, 0.4444,
+        0.1666, 0.2333, 0.0, 0.6666, 0.8888,
+        0.4333, 0.2333, 0.0, 0.8888, 0.8888,
+
+        -0.5, -0.09, 0.0, 0.6666, 0.4444,
+        -0.2333, -0.09, 0.0, 0.8888, 0.4444,
+        -0.5, -0.3566, 0.0, 0.6666, 0.8888,
+        -0.2333, -0.3566, 0.0, 0.8888, 0.8888,
+
+        0.2333, -0.09, 0.0, 0.6666, 0.4444,
+        0.5, -0.09, 0.0, 0.8888, 0.4444,
+        0.2333, -0.3566, 0.0, 0.6666, 0.8888,
+        0.5, -0.3566, 0.0, 0.8888, 0.8888,
+
+        -0.2333, -0.23, 0.0, 0.6111, 0,
+        0.2333, -0.23, 0.0, 1, 0,
+        -0.2333, -0.43, 0.0, 0.6111, 0.3333,
+        0.2333, -0.43, 0.0, 1, 0.3333]
+
+    indices = [
+            0, 1, 2,
+            2, 3, 1,
+            4, 5, 6,
+            6, 5, 7,
+            8, 9, 10,
+            10, 9, 11,
+            12, 13, 14,
+            14, 13, 15,
+            16, 17, 18,
+            18, 17, 19,
+            20, 21, 22,
+            22, 21, 23]
+
+    return Shape(vertices, indices)        
 
 def createMultiTextureQuad(xi, xf, yi, yf):
 
@@ -472,8 +463,9 @@ def createLetterL():
 
 def createLine():
     vertices = [
-                0.5, 0.5, 0.0, 1.0, 0.5, 1.0,
-                -0.5, -0.5, 0.0, 1.0, 1.0, 1.0]
+                #Vertices         #Color
+                 0.5,  0.5, 0.0,  0.36, 0.47, 0.53,
+                -0.25, -0.45, 0.0,  0.36, 0.47, 0.53]
               
     indices = [0, 1]
     

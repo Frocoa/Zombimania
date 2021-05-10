@@ -296,3 +296,22 @@ class Human():
         self.model.transform = tr.matmul([tr.translate(self.pos[0], self.pos[1], 0), tr.scale(self.size, self.size*2, 1)])
         self.checkShouldBeRemoved()
         self.checkDirection()
+
+class Star():
+#Clase para las estrellas
+
+    def __init__(self, posX, posY):
+        self.pos = [posX, posY]
+        self.model = None 
+
+    def setModel(self,model):
+        self.model = model
+
+    def getModel(self):
+        return self.model    
+
+    def getPosX(self):
+        return self.pos[0]
+
+    def getPosY(self):
+        return self.pos[1]           

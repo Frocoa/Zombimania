@@ -14,10 +14,10 @@ from shapes import *
 from model import *
 import sys
 
-#Z = sys.argv[1]
-#H = sys.argv[2]
-#T = sys.argv[3]
-#P = sys.argv[4]
+#z = float(sys.argv[1])
+#h = float(sys.argv[2])
+#t = float(sys.argv[3])
+#p = float(sys.argv[4])
 
 
 # We will use 32 bits data, so an integer has 4 bytes
@@ -155,14 +155,25 @@ if __name__ == "__main__":
         model = createTextureGPUShape(bs.createMultiTextureQuad(i/7, (i+1)/7, 0, 1), tex_pipeline, "sprites/zombieSheet.png")
         zombieModelList += [model]
 
-    # Shape con textura de los humanosw
+    # Shape con textura de los humanos
     humanModelList = []
     for i in range(6):
         model = createTextureGPUShape(bs.createMultiTextureQuad(i/6, (i+1)/6, 0, 1), tex_pipeline, "sprites/humanSheet.png")
         humanModelList += [model]
    
+    # Shape con la textura de la calavera
+    skullModel = createTextureGPUShape(bs.createTextureSkull(), tex_pipeline, "sprites/skull.png")
 
+    wingsModel = createGPUShape(bs.createWings(14), pipeline)
 
+    #Nodo de la calavera
+    skullNode = sg.SceneGraphNode("skull")
+    skullNode.childs = [skullModel]
+
+    #Nodo de las alas de victoria
+    wingsNode = sg.SceneGraphNode("wings")
+    wingsNode.transform = tr.matmul([tr.translate(0.0, -0.2, 0.0), tr.scale(1.1, 1.1, 1.0)])
+    wingsNode.childs = [wingsModel]
 
     # Se crea el nodo de la pantalla roja
     pantallaRoja = createGPUShape(bs.createColorQuad(0.35,0.0,0.0), colorPipeline)
@@ -176,6 +187,9 @@ if __name__ == "__main__":
     victoryNode = sg.SceneGraphNode("victory")
     victoryNode.transform = tr.translate(2.0,0,0) # Para evitar que salga un frame en el centro antes de tiempo
     victoryNode.childs = [victory]
+
+    victoryScreenNode = sg.SceneGraphNode("victoryScreen")
+    victoryScreenNode.childs = []
 
     gameOverNode = sg.SceneGraphNode("gameOver")
     gameOverNode.transform = tr.translate(2.0, 0.0, 0.0)  # Para evitar que salga un frame en el centro antes de tiempo
@@ -200,6 +214,8 @@ if __name__ == "__main__":
     tex_scene = sg.SceneGraphNode("textureScene")
     tex_scene.childs = [crearDecoracion(tex_pipeline),crearSalida(tex_pipeline),playerNode,zombieGroup, humanGroup]
 
+    
+
     #Player
     player = Player(0.08, 0.16)
     player.set_model(playerNode)
@@ -210,10 +226,23 @@ if __name__ == "__main__":
     zombieList = []
     humanList = []
     infectedList = []
+    starList = []
+
+    # Estrella movil
+    glUseProgram(pipeline.shaderProgram)
+    starVertices = bs.movileStarVertices(0)
+    starShape = bs.createMovileStar(starVertices)
+    gpuStarShape = es.GPUShape().initBuffers()
+    pipeline.setupVAO(gpuStarShape)
+    gpuStarShape.fillBuffers(starShape.vertices, starShape.indices, GL_STREAM_DRAW)
+  
+    starNode = sg.SceneGraphNode("starGroup")
+    starNode.childs = []
+    
 
     # Crear un zombie
     def instantiateZombie(x,y,goingUpwards):
-        global zombieList 
+        global zombieList
         newZombie = sg.SceneGraphNode("zombie")
         newZombie.childs = [zombieModelList[0]]
 
@@ -226,7 +255,7 @@ if __name__ == "__main__":
         zombieList += [zombie]
 
     def instantiateHuman(x, y, goingUpwards):
-        global humanList 
+        global humanList
         newHuman = sg.SceneGraphNode("human")
         newHuman.childs = [humanModelList[0]]
 
@@ -237,7 +266,23 @@ if __name__ == "__main__":
         human.set_model(newHuman)
         human.update()
 
-        humanList += [human]   
+        humanList += [human]
+
+    def instantiateStar(x,y):
+        global starList
+        newStar = sg.SceneGraphNode("star")
+        newStar.transform = tr.translate(x,y,0)
+        newStar.childs = [gpuStarShape]
+        starNode.childs += [newStar]
+
+        star = Star(x,y)
+        star.setModel(newStar)
+        starList += [star]
+
+        
+        
+
+
 
 
     def changePlayerFrame(frameIndex):
@@ -248,18 +293,7 @@ if __name__ == "__main__":
         else:
             playerNode.childs = [playerDyingModelList[frameIndex]] 
 
-    glUseProgram(pipeline.shaderProgram)
-    starVertices = bs.movileStarVertices(0)
-    starShape = bs.createMovileStar(starVertices)
-    gpuStarShape = es.GPUShape().initBuffers()
-    pipeline.setupVAO(gpuStarShape)
-    gpuStarShape.fillBuffers(starShape.vertices, starShape.indices, GL_STREAM_DRAW)
-  
-    starNode = sg.SceneGraphNode("star")
-    starNode.transform = tr.scale(0.2, 0.2, 0.0)
-    starNode.childs = [gpuStarShape]
 
-    mainScene.childs += [starNode]
     
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
 
@@ -271,9 +305,9 @@ if __name__ == "__main__":
     t_inicial = 0
     
     p = 0.2
-    tamañoHorda = 2
-    tamañoGrupoHumanos = 2
-    zombieCooldown = 2.0
+    z = 2
+    h = 2
+    t = 2.0
 
     playerAnimPeriod = 0.08
     playerAnimMoment = 0
@@ -301,13 +335,13 @@ if __name__ == "__main__":
         # Todo lo que ocurre cada T segundos
         t_pasado = t1 - t_inicial
 
-        if( t_pasado >= zombieCooldown):
+        if( t_pasado >= t):
 
-            for n in range(tamañoHorda):
+            for n in range(z):
                 instantiateZombie(rand.uniform(-0.7,0.7), 1.1, bool(rand.getrandbits(1)))
                 
             
-            for n in range(tamañoGrupoHumanos):
+            for n in range(h):
                 instantiateHuman(rand.uniform(-0.7, 0.7), 1.1, bool(rand.getrandbits(1)))
 
             for human in humanList:
@@ -335,7 +369,8 @@ if __name__ == "__main__":
         glfw.poll_events()
 
         # El personaje tiene animacion solo al moverse
-        if (controller.is_a_pressed or controller.is_d_pressed or controller.is_s_pressed or controller.is_w_pressed):
+        if (controller.is_a_pressed or controller.is_d_pressed or \
+            controller.is_s_pressed or  controller.is_w_pressed):
             if (player.isAlive and not controller.gameWon):
                 changePlayerFrame(player.nextSpriteIndex())
 
@@ -344,10 +379,12 @@ if __name__ == "__main__":
 
 
         #Estrella moment
-        starVertices = bs.movileStarVertices(t1)
-        vertexData = np.array(starVertices, dtype=np.float32)
-        glBindBuffer(GL_ARRAY_BUFFER, gpuStarShape.vbo)
-        glBufferData(GL_ARRAY_BUFFER, len(vertexData) * SIZE_IN_BYTES, vertexData, GL_STREAM_DRAW)
+        if(controller.gameWon):
+            starVertices = bs.movileStarVertices(t1)
+            vertexData = np.array(starVertices, dtype=np.float32)
+            glBindBuffer(GL_ARRAY_BUFFER, gpuStarShape.vbo)
+            glBufferData(GL_ARRAY_BUFFER, len(vertexData) * SIZE_IN_BYTES, vertexData, GL_STREAM_DRAW)
+            
 
 
         # Se llama al metodo del player para detectar colisiones
@@ -362,14 +399,25 @@ if __name__ == "__main__":
         if player.isAlive == False and alreadyDead == False:
             playerNode.childs = []
             hudNode.childs += [gameOverNode]
+            skullNode.transform = tr.matmul([tr.translate(player.pos[0], \
+                                             player.pos[1], 0), tr.scale(0.15, 0.15, 1.0)])
+            tex_scene.childs += [skullNode]
             instantiateZombie(player.pos[0], player.pos[1], False)
 
             alreadyDead = True
 
-        #Se añade una vez la frase de victoria
+        #Ocurre una vez al ganar la partida
         if(controller.gameWon == True and alreadyWon == False):
             hudNode.childs += [victoryNode]
+            victoryScreenNode.childs += [starNode, wingsNode, victoryNode]
             playerNode.childs = []
+
+            for n in range(13):
+                instantiateStar(0.8*math.cos(n/2),0.8*math.sin(n/2))
+
+            for star in starList:
+             star.getModel().transform = tr.matmul([tr.translate(star.getPosX(), star.getPosY(), 0.0) \
+                                                    ,tr.scale(0.1,0.1,1.0),tr.rotationZ(t1*2)])
             alreadyWon = True
 
         # Movimiento de los zombies
@@ -438,7 +486,7 @@ if __name__ == "__main__":
         # Se dibuja la pantalla de color
         glUseProgram(colorPipeline.shaderProgram)
         if(player.isAlive == False):
-            sg.drawSceneGraphNodeShader(hudNode, colorPipeline, "transform", transparency, 1)
+            sg.drawSceneGraphNodeShader(hudNode, colorPipeline, "transform", transparency, 2)
             palabra = sg.findNode(hudNode, "gameOver")
             palabra.transform = tr.matmul([tr.translate(transparency-0.95,0,0), tr.shearing(shearingEffect,0,0,0,0,0)])
              
@@ -453,9 +501,9 @@ if __name__ == "__main__":
                 shearingEffect = 0    
 
         elif(controller.gameWon == True and player.isAlive == True):
-            sg.drawSceneGraphNodeShader(victoryNode, colorPipeline, "transform", 1, 2)
+            sg.drawSceneGraphNodeShader(victoryScreenNode, colorPipeline, "transform", victoryPos, 1)
             palabra = sg.findNode(hudNode, "victory")
-            palabra.transform = tr.matmul([tr.translate(victoryPos-0.97,0.1,0),tr.shearing(0,shearingEffect,0,0,0,0)])
+            palabra.transform = tr.matmul([tr.translate(victoryPos-0.99,0.1,0),tr.shearing(0,shearingEffect,0,0,0,0)])
 
             if victoryPos > 1.0:
                 victoryPos -= 5.5*delta
@@ -469,7 +517,7 @@ if __name__ == "__main__":
 
 
         elif(player.isInfected == True):
-            transparency = 6.0
+            transparency = 3.0
             sg.drawSceneGraphNodeShader(pantallaNode, colorPipeline, "transform", transparency, 0)
 
         # Once the drawing is rendered, buffe01rs are swap so an uncomplete drawing is never seen.

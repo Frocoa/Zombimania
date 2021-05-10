@@ -105,7 +105,7 @@ def drawSceneGraphNodeTex(node, pipeline, transformName,index, parentTransform=t
         for child in node.childs:
             drawSceneGraphNodeTex(child, pipeline, transformName,index, newTransform)
 
-def drawSceneGraphNodeShader(node, pipeline, transformName,transparency,isRed, parentTransform=tr.identity()):
+def drawSceneGraphNodeShader(node, pipeline, transformName,transparency,colorFilter, parentTransform=tr.identity()):
     assert(isinstance(node, SceneGraphNode))
 
     # Composing the transformations through this path
@@ -117,14 +117,14 @@ def drawSceneGraphNodeShader(node, pipeline, transformName,transparency,isRed, p
         leaf = node.childs[0]
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, transformName), 1, GL_TRUE, newTransform)
         glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "transparency"), transparency)
-        glUniform1i(glGetUniformLocation(pipeline.shaderProgram, "isRed"), isRed)
+        glUniform1i(glGetUniformLocation(pipeline.shaderProgram, "colorFilter"), colorFilter)
         pipeline.drawCall(leaf)
 
     # If the child node is not a leaf, it MUST be a SceneGraphNode,
     # so this draw function is called recursively
     else:
         for child in node.childs:
-            drawSceneGraphNodeShader(child, pipeline, transformName,transparency,isRed, newTransform)
+            drawSceneGraphNodeShader(child, pipeline, transformName,transparency,colorFilter, newTransform)
 
 def drawSceneGraphNode(node, pipeline, transformName, parentTransform=tr.identity()):
     assert(isinstance(node, SceneGraphNode))

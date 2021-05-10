@@ -141,7 +141,7 @@ class ScreenEffectShaderProgram:
             #version 130
 
             uniform float transparency;
-            uniform int isRed;
+            uniform int colorFilter;
 
             in vec3 newColor;
 
@@ -150,9 +150,13 @@ class ScreenEffectShaderProgram:
             void main()
             {
                 vec3 color;
-                if(isRed == 1){
-                    color = vec3(newColor.r,0.0,0.0);
+
+                if(colorFilter == 1){
+                    color = newColor;
                 }
+                else if (colorFilter == 2){
+                    color = vec3(newColor.r,0.0,0.0);
+                    }
                 else{
                     color = vec3(0.0,newColor.r,0.0);
                 }

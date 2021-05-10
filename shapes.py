@@ -152,12 +152,16 @@ def crearEscenario(pipeline):
     gpuBlueGreenQuad = createGPUShape(bs.createColorQuad(0.411, 0.611, 0.592), pipeline)
     gpuDarkBlueGreenQuad = createGPUShape(bs.createColorQuad(0.266,0.44, 0.42 ), pipeline) 
     gpuGrayQuad = createGPUShape(bs.createColorQuad(0.537, 0.647, 0.714 ), pipeline)
-    gpuWhiteLine = createGPUShape(bs.createLine(), pipeline)
+    gpuLine = createGPUShape(bs.createLine(), pipeline)
 
-    # Nodo de la muralla del hospital
+    # Nodo del muro del hospital
+    muroNode = sg.SceneGraphNode("muro")
+    muroNode.transform = tr.scale(2.0, 2.0, 1.0)
+    muroNode.childs = [gpuGrayQuad]
+
+    # Nodo de la muralla (Muro + diseño de lienas)
     murallaNode = sg.SceneGraphNode("muralla")
-    murallaNode.transform = tr.scale(2.0, 2.0, 1.0)
-    murallaNode.childs = [gpuGrayQuad]
+    murallaNode.childs = [muroNode]
 
     # Nodo del suelo del hostpial que es un quad azul
     sueloNode = sg.SceneGraphNode("suelo")
@@ -189,21 +193,25 @@ def crearEscenario(pipeline):
     disenoCuadradoNode2.transform = tr.translate(0.0, -0.8, 0.0 )  
     disenoCuadradoNode2.childs = [cuadradoClaroNode, cuadradoOscuroNode]
 
+    # Nodo que tiene todo el piso
+    pisoNode = sg.SceneGraphNode("piso")
+    pisoNode.childs = [sueloNode, sueloOscuroNode, disenoCuadradoNode, disenoCuadradoNode2]
+
     # Nodo que junta todo lo del escenario
     escenarioNode = sg.SceneGraphNode("escenario")
-    escenarioNode.childs = [murallaNode, sueloNode, sueloOscuroNode, disenoCuadradoNode, disenoCuadradoNode2]
+    escenarioNode.childs = [murallaNode, pisoNode]
 
     # Nodo de las lineas de la muralla
-    for i in range(5):
+    for i in range(9):
         lineaNode = sg.SceneGraphNode("linea")
-        lineaNode.transform = tr.matmul([tr.translate(-0.90, -1 + 2/4 * i, 0.0), tr.scale(0.3,0.2,1.0)])
-        lineaNode.childs = [gpuWhiteLine]
-        escenarioNode.childs += [lineaNode]
+        lineaNode.transform = tr.matmul([tr.translate(-0.90, -1 + 2/8 * i, 0.0), tr.scale(0.3,0.2,1.0)])
+        lineaNode.childs = [gpuLine]
+        murallaNode.childs += [lineaNode]
 
         lineaNode2 = sg.SceneGraphNode("linea")
-        lineaNode2.transform = tr.matmul([tr.translate(0.90, -1 + 2/4*i, 0.0), tr.scale(0.3, 0.2, 1.0), tr.rotationZ(1.5708)])
-        lineaNode2.childs = [gpuWhiteLine]
-        escenarioNode.childs += [lineaNode2]
+        lineaNode2.transform = tr.matmul([tr.translate(0.90, -1 + 2/8*i, 0.0), tr.scale(0.3, 0.2, 1.0), tr.rotationZ(1.5708)])
+        lineaNode2.childs = [gpuLine]
+        murallaNode.childs += [lineaNode2]
 
     return escenarioNode
 
