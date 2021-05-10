@@ -15,6 +15,9 @@ class Shape:
         self.textureFileName = textureFileName
 
 
+def clamp(num, min_value, max_value):
+   return max(min(num, max_value), min_value)
+
 def merge(destinationShape, strideSize, sourceShape):
 
     # current vertices are an offset for indices refering to vertices of the new shape
@@ -68,23 +71,6 @@ def createAxis(length=1.0):
 
     return Shape(vertices, indices)
 
-
-def createRainbowTriangle():
-
-    # Defining the location and colors of each vertex  of the shape
-    vertices = [
-    #   positions        colors
-        -0.5, -0.5, 0.0,  1.0, 0.0, 0.0,
-         0.5, -0.5, 0.0,  0.0, 1.0, 0.0,
-         0.0,  0.5, 0.0,  0.0, 0.0, 1.0]
-
-    # Defining connections among vertices
-    # We have a triangle every 3 indices specified
-    indices = [0, 1, 2]
-
-    return Shape(vertices, indices)
-
-
 def createRainbowCircle(N):
 
     # First vertex at the center, white color
@@ -94,14 +80,14 @@ def createRainbowCircle(N):
     dtheta = 2 * math.pi / N
 
     for i in range(N):
-        theta = i * dtheta
+        t = i * dtheta
 
         vertices += [
             # vertex coordinates
-             math.cos(theta*3.14*i/360)*math.cos(theta*2*3.14*i/360),  math.cos(theta*3.14*i/360)*math.sin(theta*2*3.14*i/360), 0,
+             math.cos(t*3.14*i/360)*math.cos(t*2*3.14*i/360),  math.cos(t*3.14*i/360)*math.cos(t*2*3.14*i/360), 0,
 
             # color generates varying between 0 and 1
-                  math.sin(theta),       math.cos(theta), 0]
+                  math.cos(t),       math.cos(t), 0]
 
         # A triangle is created using the center, this and the next vertex
         indices += [0, i, i+1]
@@ -132,6 +118,22 @@ def createColorQuad(r, g, b):
     return Shape(vertices, indices)
 
 
+def movileStarVertices(t):
+    cos = clamp(abs(math.cos(18*t)),0.45,0.65)
+    sin = clamp(abs(math.sin(18*t)),0.45,0.65)
+    vertices = [-0.5 * cos, -0.25 * cos, 0,  0.8, 0.8, 0.0,
+                0.5 * cos,  -0.25 * cos, 0,  0.9, 0.8, 0.0,
+                0.0, 0.5 * cos, 0,  0.8, 0.8, 0.0,
+                -0.5 * sin, 0.25 * sin, 0,  0.8, 0.8, 0.0,
+                0.5 * sin, 0.25 * sin, 0,  0.9, 0.8, 0.0,
+                0.0, -0.5 * sin, 0, 0.9, 0.8, 0.0]
+    return vertices            
+
+def createMovileStar(newVertices):
+    indices = [ 0, 1, 2,
+                3, 4, 5]
+    return Shape(newVertices, indices)
+                            
 def createTextureQuad(nx, ny):
 
     # Defining locations and texture coordinates for each vertex of the shape    

@@ -209,7 +209,7 @@ if __name__ == "__main__":
     # Lista con todas los zombies
     zombieList = []
     humanList = []
-    infectedList= []
+    infectedList = []
 
     # Crear un zombie
     def instantiateZombie(x,y,goingUpwards):
@@ -247,6 +247,19 @@ if __name__ == "__main__":
 
         else:
             playerNode.childs = [playerDyingModelList[frameIndex]] 
+
+    glUseProgram(pipeline.shaderProgram)
+    starVertices = bs.movileStarVertices(0)
+    starShape = bs.createMovileStar(starVertices)
+    gpuStarShape = es.GPUShape().initBuffers()
+    pipeline.setupVAO(gpuStarShape)
+    gpuStarShape.fillBuffers(starShape.vertices, starShape.indices, GL_STREAM_DRAW)
+  
+    starNode = sg.SceneGraphNode("star")
+    starNode.transform = tr.scale(0.2, 0.2, 0.0)
+    starNode.childs = [gpuStarShape]
+
+    mainScene.childs += [starNode]
     
     perfMonitor = pm.PerformanceMonitor(glfw.get_time(), 0.5)
 
@@ -270,7 +283,7 @@ if __name__ == "__main__":
     victoryPos = 10.0
     alreadyWon = False
 
-    shearingEffect = [15.0, 13.0]
+    shearingEffect = 15.0
 
     glLineWidth(3)
 
@@ -326,8 +339,16 @@ if __name__ == "__main__":
             if (player.isAlive and not controller.gameWon):
                 changePlayerFrame(player.nextSpriteIndex())
 
-        # Clearing the screenwawa
+        # Clearing the screen
         glClear(GL_COLOR_BUFFER_BIT)
+
+
+        #Estrella moment
+        starVertices = bs.movileStarVertices(t1)
+        vertexData = np.array(starVertices, dtype=np.float32)
+        glBindBuffer(GL_ARRAY_BUFFER, gpuStarShape.vbo)
+        glBufferData(GL_ARRAY_BUFFER, len(vertexData) * SIZE_IN_BYTES, vertexData, GL_STREAM_DRAW)
+
 
         # Se llama al metodo del player para detectar colisiones
         if(player.isAlive and not player.dashing and not controller.gameWon):
@@ -388,14 +409,14 @@ if __name__ == "__main__":
             if zombie.shouldBeRemoved:
                 zombie.remove(zombieGroup, zombieList)
 
-        #Borrar los humanos fuera del mapaw
+        #Borrar los humanos fuera del mapa
         for human in humanList:
             if human.shouldBeRemoved:
                 human.remove(humanGroup, humanList)
 
         
-        # Se dibuja el grafo de escena principal w
-        if player.isInfected and player.isAlive:
+        # Se dibuja el grafo de escena principal
+        if player.isInfected and player.isAlive and not controller.gameWon:
             glUseProgram(infectedPipeline.shaderProgram)
             sg.drawSceneGraphInfected(mainScene,infectedPipeline,"transform", infectedFloat)
             infectedFloat += 0.01
@@ -419,30 +440,37 @@ if __name__ == "__main__":
         if(player.isAlive == False):
             sg.drawSceneGraphNodeShader(hudNode, colorPipeline, "transform", transparency, 1)
             palabra = sg.findNode(hudNode, "gameOver")
-            palabra.transform = tr.matmul([tr.translate(transparency-0.95,0,0), tr.shearing(shearingEffect[0],0,0,0,0,0)])
+            palabra.transform = tr.matmul([tr.translate(transparency-0.95,0,0), tr.shearing(shearingEffect,0,0,0,0,0)])
              
             if transparency > 1.0:
                 transparency -= 3*delta
             else:
-                shearingEffect[0] = 0    
+                shearingEffect -= 2*delta    
 
-            if shearingEffect[0] >= 0:
-                shearingEffect[0] -= 4.5*delta
-                
+            shearingEffect -= 4.5*delta
+
+            if shearingEffect <= 0:
+                shearingEffect = 0    
 
         elif(controller.gameWon == True and player.isAlive == True):
             sg.drawSceneGraphNodeShader(victoryNode, colorPipeline, "transform", 1, 2)
             palabra = sg.findNode(hudNode, "victory")
-            palabra.transform = tr.translate(victoryPos-0.97,0.1,0)
+            palabra.transform = tr.matmul([tr.translate(victoryPos-0.97,0.1,0),tr.shearing(0,shearingEffect,0,0,0,0)])
 
             if victoryPos > 1.0:
                 victoryPos -= 5.5*delta
+            else:
+                shearingEffect -= 2*delta    
+
+            shearingEffect -= 4.5*delta
+
+            if shearingEffect <= 0:
+                shearingEffect = 0  
+
 
         elif(player.isInfected == True):
             transparency = 6.0
             sg.drawSceneGraphNodeShader(pantallaNode, colorPipeline, "transform", transparency, 0)
-
-
 
         # Once the drawing is rendered, buffe01rs are swap so an uncomplete drawing is never seen.
         glfw.swap_buffers(window)
