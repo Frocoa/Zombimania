@@ -6,7 +6,6 @@ import OpenGL.GL.shaders
 import numpy as np
 from PIL import Image
 
-import grafica.basic_shapes as bs
 from grafica.gpu_shape import GPUShape
 
 __author__ = "Daniel Calderon"
@@ -49,6 +48,7 @@ def textureSimpleSetup(imgName, sWrapMode, tWrapMode, minFilterMode, maxFilterMo
     return texture
 
 
+# shader estandar para modelos geometricos
 class SimpleTransformShaderProgram:
 
     def __init__(self):
@@ -116,6 +116,7 @@ class SimpleTransformShaderProgram:
         glBindVertexArray(0)
 
 
+# shader para cambiar colores y transparencias de la pantalla
 class ScreenEffectShaderProgram:
 
     def __init__(self):
@@ -187,7 +188,7 @@ class ScreenEffectShaderProgram:
         glBindVertexArray(0)
 
 
-    def drawCall(self, gpuShape, mode=GL_TRIANGLES):
+    def drawCall(self, gpuShape, mode = GL_TRIANGLES):
         assert isinstance(gpuShape, GPUShape)
 
         # Binding the VAO and executing the draw call
@@ -198,8 +199,8 @@ class ScreenEffectShaderProgram:
         glBindVertexArray(0)
 
 
-# Shader
-class SimpleTextureTransformShaderProgram:
+# Shader para transformar la figura de una textura a un color transparente
+class TransparentTextureShaderProgram:
 
     def __init__(self):
 
@@ -226,7 +227,7 @@ class SimpleTextureTransformShaderProgram:
         fragment_shader = """
             #version 130
 
-            uniform int index;
+            uniform float transparencyValue;
 
             in vec2 outTexCoords;
 
@@ -235,16 +236,11 @@ class SimpleTextureTransformShaderProgram:
             uniform sampler2D samplerTex;
 
             void main()
-            {
-                if (index == 1){
-                    vec2 vector;
-                    outColor = texture(samplerTex, outTexCoords);
-                    }
-                else{
-                    float transparency;
-                    transparency = texture(samplerTex, outTexCoords).w;
-                    outColor = vec4(0.0,1.0,0.0,transparency/2.0);   
-                }
+            {  
+                float transparency;
+                transparency = texture(samplerTex, outTexCoords).w;
+                outColor = vec4(0.0,1.0,0.0,transparency*transparencyValue);   
+                
             }
             """
 
@@ -284,8 +280,85 @@ class SimpleTextureTransformShaderProgram:
         # Unbind the current VAO
         glBindVertexArray(0)
 
+# Shader estandar para dibujar modelos con textura
+class SimpleTextureTransformShaderProgram:
+
+    def __init__(self):
+
+        vertex_shader = """
+            #version 130
+
+            uniform mat4 transform;
+            
+
+            in vec3 position;
+            in vec2 texCoords;
+
+            out vec2 outTexCoords;
+
+            void main()
+            {
+                vec2 newTexCoord;
+                gl_Position = transform * vec4(position, 1.0f);
+                newTexCoord = vec2(texCoords.x,texCoords.y);
+                outTexCoords = newTexCoord;
+            }
+            """
+
+        fragment_shader = """
+            #version 130
+
+            in vec2 outTexCoords;
+
+            out vec4 outColor;
+
+            uniform sampler2D samplerTex;
+
+            void main()
+            {
+                
+                outColor = texture(samplerTex, outTexCoords);
+                    
+            }
+            """
+
+        # Compiling our shader program
+        self.shaderProgram = OpenGL.GL.shaders.compileProgram(
+            OpenGL.GL.shaders.compileShader(vertex_shader, GL_VERTEX_SHADER),
+            OpenGL.GL.shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER))
 
 
+    def setupVAO(self, gpuShape):
+
+        glBindVertexArray(gpuShape.vao)
+
+        glBindBuffer(GL_ARRAY_BUFFER, gpuShape.vbo)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gpuShape.ebo)
+
+        # 3d vertices + 2d texture coordinates => 3*4 + 2*4 = 20 bytes
+        position = glGetAttribLocation(self.shaderProgram, "position")
+        glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(position)
+        
+        texCoords = glGetAttribLocation(self.shaderProgram, "texCoords")
+        glVertexAttribPointer(texCoords, 2, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(3 * SIZE_IN_BYTES))
+        glEnableVertexAttribArray(texCoords)
+
+        # Unbinding current vao
+        glBindVertexArray(0)
+
+
+    def drawCall(self, gpuShape, mode=GL_TRIANGLES):
+        assert isinstance(gpuShape, GPUShape)
+
+        glBindVertexArray(gpuShape.vao)
+        glBindTexture(GL_TEXTURE_2D, gpuShape.texture)
+        glDrawElements(mode, gpuShape.size, GL_UNSIGNED_INT, None)
+
+        # Unbind the current VAO
+        glBindVertexArray(0)
+
+# shader para cambiar a varios colores los modelos geometricos
 class InfectedTransformShaderProgram:
 
     def __init__(self):
@@ -310,6 +383,7 @@ class InfectedTransformShaderProgram:
         fragment_shader = """
             #version 130
 
+            // Devuelve colores basado en el cos y sin
             vec3 crazyInnator(in vec3 color, in float i){
                 vec3 crazyColor;
                 crazyColor = vec3(cos(i)*color.r , sin(i)*color.g, cos(i)*color.b);

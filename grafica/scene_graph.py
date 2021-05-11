@@ -85,7 +85,8 @@ def findPosition(node, name, parentTransform=tr.identity()):
     return None
 
 
-def drawSceneGraphNodeTex(node, pipeline, transformName,index, parentTransform=tr.identity()):
+# Funcion de dibujo de grafo de escena especial para la escena con texturas
+def drawSceneGraphNodeTex(node, pipeline, transformName, sendUniform, transparencyValue = 0, parentTransform=tr.identity()):
     assert(isinstance(node, SceneGraphNode))
 
     # Composing the transformations through this path
@@ -96,15 +97,18 @@ def drawSceneGraphNodeTex(node, pipeline, transformName,index, parentTransform=t
     if len(node.childs) == 1 and isinstance(node.childs[0], gs.GPUShape):
         leaf = node.childs[0]
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, transformName), 1, GL_TRUE, newTransform)
-        glUniform1i(glGetUniformLocation(pipeline.shaderProgram, "index"), index)
+        # Solo se envia este uniform si es necesario
+        if sendUniform == True:
+            glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "transparencyValue"), transparencyValue) # uniform de transparencia
         pipeline.drawCall(leaf)
 
     # If the child node is not a leaf, it MUST be a SceneGraphNode,
     # so this draw function is called recursively
     else:
         for child in node.childs:
-            drawSceneGraphNodeTex(child, pipeline, transformName,index, newTransform)
+            drawSceneGraphNodeTex(child, pipeline, transformName,transparencyValue, sendUniform, newTransform)
 
+# Funcion de dibujo de grafo de escena especial para los cambios de color de la interfaz
 def drawSceneGraphNodeShader(node, pipeline, transformName,transparency,colorFilter, parentTransform=tr.identity()):
     assert(isinstance(node, SceneGraphNode))
 
@@ -116,8 +120,8 @@ def drawSceneGraphNodeShader(node, pipeline, transformName,transparency,colorFil
     if len(node.childs) == 1 and isinstance(node.childs[0], gs.GPUShape):
         leaf = node.childs[0]
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, transformName), 1, GL_TRUE, newTransform)
-        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "transparency"), transparency)
-        glUniform1i(glGetUniformLocation(pipeline.shaderProgram, "colorFilter"), colorFilter)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "transparency"), transparency) # Se manda un uniform de transparencia
+        glUniform1i(glGetUniformLocation(pipeline.shaderProgram, "colorFilter"), colorFilter) # Se manda un uniform que determina el color
         pipeline.drawCall(leaf)
 
     # If the child node is not a leaf, it MUST be a SceneGraphNode,
@@ -126,6 +130,7 @@ def drawSceneGraphNodeShader(node, pipeline, transformName,transparency,colorFil
         for child in node.childs:
             drawSceneGraphNodeShader(child, pipeline, transformName,transparency,colorFilter, newTransform)
 
+# Funcion de dibujo de grafo estandar para los dibujos geometricos
 def drawSceneGraphNode(node, pipeline, transformName, parentTransform=tr.identity()):
     assert(isinstance(node, SceneGraphNode))
 
@@ -137,6 +142,7 @@ def drawSceneGraphNode(node, pipeline, transformName, parentTransform=tr.identit
     if len(node.childs) == 1 and isinstance(node.childs[0], gs.GPUShape):
         leaf = node.childs[0]
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, transformName), 1, GL_TRUE, newTransform)
+        # Si el nodo se llama "linea" se cambia el modo de dibujo
         if node.name == "linea":
             pipeline.drawCall(leaf, mode = GL_LINES)
         else:
@@ -148,7 +154,7 @@ def drawSceneGraphNode(node, pipeline, transformName, parentTransform=tr.identit
         for child in node.childs:
             drawSceneGraphNode(child, pipeline, transformName, newTransform)
 
-
+# Funcion de dibujo de grafo de escena especial para hacer el efecto de la infeccion
 def drawSceneGraphInfected(node, pipeline, transformName,infectedIndex, parentTransform=tr.identity()):
     assert(isinstance(node, SceneGraphNode))
 
@@ -160,6 +166,8 @@ def drawSceneGraphInfected(node, pipeline, transformName,infectedIndex, parentTr
     if len(node.childs) == 1 and isinstance(node.childs[0], gs.GPUShape):
         leaf = node.childs[0]
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, transformName), 1, GL_TRUE, newTransform)
+        
+        #Este uniform es el valor que determina el momento en el ciclo de el cambio de color
         glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "infectedIndex"), infectedIndex)
         pipeline.drawCall(leaf)
 

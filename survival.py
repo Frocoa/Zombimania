@@ -3,21 +3,21 @@
 import glfw
 import OpenGL.GL.shaders
 import numpy as np
-import grafica.basic_shapes as bs
-import grafica.easy_shaders as es
+import grafica.shapes 
+import grafica.shaders as shad
 import grafica.transformations as tr
 import grafica.performance_monitor as pm
 import grafica.scene_graph as sg
 from grafica.gpu_shape import GPUShape
 import random as rand
-from shapes import *
-from model import *
+from nodos import *
+from clases import *
 import sys
 
-#z = float(sys.argv[1])
-#h = float(sys.argv[2])
-#t = float(sys.argv[3])
-#p = float(sys.argv[4])
+z = int(sys.argv[1])
+h = int(sys.argv[2])
+t = float(sys.argv[3])
+p = float(sys.argv[4])
 
 
 # We will use 32 bits data, so an integer has 4 bytes
@@ -87,7 +87,7 @@ def on_key(window, key, scancode, action, mods):
         elif action == glfw.RELEASE:
             controller.is_q_pressed = False                   
 
-    # Caso de detecar la barra espaciadora, se cambia el metodo de dibujo
+    # Caso de detecar la barra espaciadora, se activa el visor de infección
     if key == glfw.KEY_SPACE and action ==glfw.PRESS:
         controller.useGoogles = not controller.useGoogles
 
@@ -119,52 +119,55 @@ if __name__ == "__main__":
     glfw.set_key_callback(window, on_key)
 
     # Pipeline para dibujar shapes con colores interpolados
-    pipeline = es.SimpleTransformShaderProgram()
-    # Pipeline para dibujar shapes con texturas
-    tex_pipeline = es.SimpleTextureTransformShaderProgram()
+    pipeline = shad.SimpleTransformShaderProgram()
+    # Pipeline para dibujar shapes con texturas de un solo color transparente
+    transparentTexPipeline = shad.TransparentTextureShaderProgram()
+    # Pipeline estandar para dibujar shapes con texturas
+    tex_pipeline = shad.SimpleTextureTransformShaderProgram() 
     # Pipeline para las transiciones de colores
-    colorPipeline = es.ScreenEffectShaderProgram()
-    # Pipeline para el shader cuando estas infectado
-    infectedPipeline = es.InfectedTransformShaderProgram()
+    colorPipeline = shad.ScreenEffectShaderProgram()
+    # Pipeline para el efecto de alucinacion cuando estas infectado
+    infectedPipeline = shad.InfectedTransformShaderProgram()
     # Setting up the clear screen color
     glClearColor(0.051, 0.09, 0.109, 1.0)
 
-    # Enabling transparencies
+    # Activando transparencias
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 
     # Grafo de escena del background
-    mainScene = crearEscenario(pipeline)
+    mainScene = createGeometricScene(pipeline)
 
-    # Shape con textura del jugador
+    # Shapes con la textura del jugador
     playerModelList = []
     for i in range(6):
-    	model = createTextureGPUShape(bs.createMultiTextureQuad(i/6, (i+1)/6, 0, 1), tex_pipeline, "sprites/playerSheet.png")
+    	model = createTextureGPUShape(shapes.createMultiTextureQuad(i/6, (i+1)/6, 0, 1), tex_pipeline, "sprites/playerSheet.png")
     	playerModelList += [model]
 
-    # Shape con textura del jugador cuando este muriendo
-    playerDyingModelList = []
+    # Shapes con textura del jugador cuando esta cansado
+    playerBreathingModel = []
     for i in range(6):
-        model = createTextureGPUShape(bs.createMultiTextureQuad(i/6, (i+1)/6, 0, 1), tex_pipeline, "sprites/playerDyingSheet.png")
-        playerDyingModelList += [model]
+        model = createTextureGPUShape(shapes.createMultiTextureQuad(i/6, (i+1)/6, 0, 1), tex_pipeline, "sprites/playerDyingSheet.png")
+        playerBreathingModel += [model]
 
-    # Shape con textura de la zombie
+    # Shapes con la textura de un zombi
     zombieModelList = []
     for i in range(7):
-        model = createTextureGPUShape(bs.createMultiTextureQuad(i/7, (i+1)/7, 0, 1), tex_pipeline, "sprites/zombieSheet.png")
+        model = createTextureGPUShape(shapes.createMultiTextureQuad(i/7, (i+1)/7, 0, 1), tex_pipeline, "sprites/zombieSheet.png")
         zombieModelList += [model]
 
-    # Shape con textura de los humanos
+    # Shapes con textura de un humano
     humanModelList = []
     for i in range(6):
-        model = createTextureGPUShape(bs.createMultiTextureQuad(i/6, (i+1)/6, 0, 1), tex_pipeline, "sprites/humanSheet.png")
+        model = createTextureGPUShape(shapes.createMultiTextureQuad(i/6, (i+1)/6, 0, 1), tex_pipeline, "sprites/humanSheet.png")
         humanModelList += [model]
    
     # Shape con la textura de la calavera
-    skullModel = createTextureGPUShape(bs.createTextureSkull(), tex_pipeline, "sprites/skull.png")
+    skullModel = createTextureGPUShape(shapes.createTextureSkull(), tex_pipeline, "sprites/skull.png")
 
-    wingsModel = createGPUShape(bs.createWings(14), pipeline)
+    # Shape de las alas doradas
+    wingsModel = createGPUShape(shapes.createWings(14), pipeline)
 
     #Nodo de la calavera
     skullNode = sg.SceneGraphNode("skull")
@@ -175,28 +178,35 @@ if __name__ == "__main__":
     wingsNode.transform = tr.matmul([tr.translate(0.0, -0.2, 0.0), tr.scale(1.1, 1.1, 1.0)])
     wingsNode.childs = [wingsModel]
 
-    # Se crea el nodo de la pantalla roja
-    pantallaRoja = createGPUShape(bs.createColorQuad(0.35,0.0,0.0), colorPipeline)
+    # Se crea la shape de la pantalla roja
+    pantallaRoja = createGPUShape(shapes.createColorQuad(0.35,0.0,0.0), colorPipeline)
+    # Se crea la shape de victoria
     victory = crearVictory(colorPipeline)
+    # Se crea la shape de game over
     gameOver = crearGameOver(colorPipeline)
 
+    # Nodo de la pantalla
     pantallaNode = sg.SceneGraphNode("pantalla")
     pantallaNode.transform = tr.scale(2,2,1)
     pantallaNode.childs = [pantallaRoja]
 
+    # Nodo de victory royale
     victoryNode = sg.SceneGraphNode("victory")
     victoryNode.transform = tr.translate(2.0,0,0) # Para evitar que salga un frame en el centro antes de tiempo
     victoryNode.childs = [victory]
 
+    # Nodo de la pantalla de victoria junto a los efectos
     victoryScreenNode = sg.SceneGraphNode("victoryScreen")
     victoryScreenNode.childs = []
 
+    # Nodo de game over
     gameOverNode = sg.SceneGraphNode("gameOver")
     gameOverNode.transform = tr.translate(2.0, 0.0, 0.0)  # Para evitar que salga un frame en el centro antes de tiempo
     gameOverNode.childs = [gameOver]
 
-    hudNode = sg.SceneGraphNode("hud")
-    hudNode.childs = [pantallaNode]
+    # Escena de la interfaz
+    hudScene = sg.SceneGraphNode("hud")
+    hudScene.childs = [pantallaNode]
 
     # Se crea el nodo del player
     playerNode = sg.SceneGraphNode("player")
@@ -211,18 +221,19 @@ if __name__ == "__main__":
     humanGroup.childs = []
 
     # Se crean el grafo de escena con textura y se agregan los zombies
-    tex_scene = sg.SceneGraphNode("textureScene")
-    tex_scene.childs = [crearDecoracion(tex_pipeline),crearSalida(tex_pipeline),playerNode,zombieGroup, humanGroup]
+    texScene = sg.SceneGraphNode("textureScene")
+    texScene.childs = [crearDecoracion(tex_pipeline),crearSalida(tex_pipeline),playerNode,
+                        zombieGroup, humanGroup]
 
     
 
-    #Player
+    # Instanciar al jugador
     player = Player(0.08, 0.16)
     player.set_model(playerNode)
     player.set_controller(controller)
 
 
-    # Lista con todas los zombies
+    # Lista con todos los objetos
     zombieList = []
     humanList = []
     infectedList = []
@@ -230,9 +241,9 @@ if __name__ == "__main__":
 
     # Estrella movil
     glUseProgram(pipeline.shaderProgram)
-    starVertices = bs.movileStarVertices(0)
-    starShape = bs.createMovileStar(starVertices)
-    gpuStarShape = es.GPUShape().initBuffers()
+    starVertices = shapes.movileStarVertices(0)
+    starShape = shapes.createMovileStar(starVertices)
+    gpuStarShape = shad.GPUShape().initBuffers()
     pipeline.setupVAO(gpuStarShape)
     gpuStarShape.fillBuffers(starShape.vertices, starShape.indices, GL_STREAM_DRAW)
   
@@ -240,7 +251,7 @@ if __name__ == "__main__":
     starNode.childs = []
     
 
-    # Crear un zombie
+    # Crear una instancia de zombi
     def instantiateZombie(x,y,goingUpwards):
         global zombieList
         newZombie = sg.SceneGraphNode("zombie")
@@ -254,6 +265,7 @@ if __name__ == "__main__":
 
         zombieList += [zombie]
 
+    # Crear una instancia de humano
     def instantiateHuman(x, y, goingUpwards):
         global humanList
         newHuman = sg.SceneGraphNode("human")
@@ -268,6 +280,7 @@ if __name__ == "__main__":
 
         humanList += [human]
 
+    # Crear una instancia de estrella
     def instantiateStar(x,y):
         global starList
         newStar = sg.SceneGraphNode("star")
@@ -279,19 +292,17 @@ if __name__ == "__main__":
         star.setModel(newStar)
         starList += [star]
 
-        
-        
-
-
-
-
+    # Manejo de la animacion del jugador
     def changePlayerFrame(frameIndex):
         # Se pasa al siguiente frame del jugador
+
+        # Jugador en estado normal
         if player.dashTimePassed >= player.dashCooldown:
             playerNode.childs = [playerModelList[frameIndex]]
 
+        # Jugador recueprando el aliento
         else:
-            playerNode.childs = [playerDyingModelList[frameIndex]] 
+            playerNode.childs = [playerBreathingModel[frameIndex]] 
 
 
     
@@ -301,27 +312,28 @@ if __name__ == "__main__":
     glfw.swap_interval(0)
     t0 = glfw.get_time()
 
-    # Application loop
+
     t_inicial = 0
     
-    p = 0.2
-    z = 2
-    h = 2
-    t = 2.0
-
+    # parametros de la animacion del jugador
     playerAnimPeriod = 0.08
     playerAnimMoment = 0
 
-    alreadyDead = False
+    # parametros de las animaciones
     transparency = 10.0
     victoryPos = 10.0
-    alreadyWon = False
-
     shearingEffect = 15.0
+    infectedFloat = 0.0
 
+    # estado de la partida
+    alreadyDead = False # perder
+    alreadyWon = False # ganar
+
+    # grosor de las lineas de la muralla
     glLineWidth(3)
 
-    infectedFloat = 0.0
+
+    # update del juego
     while not glfw.window_should_close(window):
 
         # Variables del tiempo
@@ -331,35 +343,47 @@ if __name__ == "__main__":
         
         # Control de la animacion del jugador
         sinceLastFrame = t1 - playerAnimMoment
-  
-        # Todo lo que ocurre cada T segundos
         t_pasado = t1 - t_inicial
 
+        # El personaje tiene animacion solo al moverse
+        if (controller.is_a_pressed or controller.is_d_pressed or \
+            controller.is_s_pressed or  controller.is_w_pressed):
+            if (player.isAlive and not controller.gameWon):
+                changePlayerFrame(player.nextSpriteIndex())
+
+        # Control de animacion de zombis
+        for zombie in zombieList:
+                zombie.model.childs = [zombieModelList[zombie.spriteIndex]]
+        # Control de animacion de humanos
+        for human in humanList:
+                human.model.childs = [humanModelList[human.spriteIndex]]
+        
+        # Todo lo que ocurre cada T segundos
         if( t_pasado >= t):
 
+            # se instancian z zombis
             for n in range(z):
                 instantiateZombie(rand.uniform(-0.7,0.7), 1.1, bool(rand.getrandbits(1)))
-                
-            
+            # se instancian h humanos
             for n in range(h):
                 instantiateHuman(rand.uniform(-0.7, 0.7), 1.1, bool(rand.getrandbits(1)))
-
+            # se revisa si un humano se vuelve zombi
             for human in humanList:
                 if human.isInfected:
                     human.deathRoll(p)
-
+            # Se revisa si el jugador se vuelve zombi
             if player.isInfected:
                 player.deathRoll(p)
 
-
             t_inicial = t1
 
-        #Control del sprite 
-        for zombie in zombieList:
-                zombie.model.childs = [zombieModelList[zombie.spriteIndex]]
-
-        for human in humanList:
-                human.model.childs = [humanModelList[human.spriteIndex]]
+        # Manejo de los vertices de las estrellas
+        if(controller.gameWon):
+            starVertices = shapes.movileStarVertices(t1)
+            vertexData = np.array(starVertices, dtype=np.float32)
+            glBindBuffer(GL_ARRAY_BUFFER, gpuStarShape.vbo)
+            # Se usa un estilo de dibujo dinamico
+            glBufferData(GL_ARRAY_BUFFER, len(vertexData) * SIZE_IN_BYTES, vertexData, GL_STREAM_DRAW)
 
         # Measuring performance
         perfMonitor.update(glfw.get_time())
@@ -368,59 +392,42 @@ if __name__ == "__main__":
         # Using GLFW to check for input events
         glfw.poll_events()
 
-        # El personaje tiene animacion solo al moverse
-        if (controller.is_a_pressed or controller.is_d_pressed or \
-            controller.is_s_pressed or  controller.is_w_pressed):
-            if (player.isAlive and not controller.gameWon):
-                changePlayerFrame(player.nextSpriteIndex())
-
         # Clearing the screen
         glClear(GL_COLOR_BUFFER_BIT)
-
-
-        #Estrella moment
-        if(controller.gameWon):
-            starVertices = bs.movileStarVertices(t1)
-            vertexData = np.array(starVertices, dtype=np.float32)
-            glBindBuffer(GL_ARRAY_BUFFER, gpuStarShape.vbo)
-            glBufferData(GL_ARRAY_BUFFER, len(vertexData) * SIZE_IN_BYTES, vertexData, GL_STREAM_DRAW)
-            
-
 
         # Se llama al metodo del player para detectar colisiones
         if(player.isAlive and not player.dashing and not controller.gameWon):
          player.collision(zombieList, humanList)
          player.checkWin()
-
         # Se llama al metodo del jugador para actualizar su estado
         player.update(delta)
 
-        # Muerte del jugador
+        # Ocurre una vez al perder la partida
         if player.isAlive == False and alreadyDead == False:
             playerNode.childs = []
-            hudNode.childs += [gameOverNode]
+            hudScene.childs += [gameOverNode]
             skullNode.transform = tr.matmul([tr.translate(player.pos[0], \
                                              player.pos[1], 0), tr.scale(0.15, 0.15, 1.0)])
-            tex_scene.childs += [skullNode]
+            texScene.childs += [skullNode]
             instantiateZombie(player.pos[0], player.pos[1], False)
 
             alreadyDead = True
 
-        #Ocurre una vez al ganar la partida
+        # Ocurre una vez al ganar la partida
         if(controller.gameWon == True and alreadyWon == False):
-            hudNode.childs += [victoryNode]
+            hudScene.childs += [victoryNode]
             victoryScreenNode.childs += [starNode, wingsNode, victoryNode]
             playerNode.childs = []
 
+            # Se generan 13 estrellas
             for n in range(13):
                 instantiateStar(0.8*math.cos(n/2),0.8*math.sin(n/2))
-
             for star in starList:
              star.getModel().transform = tr.matmul([tr.translate(star.getPosX(), star.getPosY(), 0.0) \
                                                     ,tr.scale(0.1,0.1,1.0),tr.rotationZ(t1*2)])
             alreadyWon = True
 
-        # Movimiento de los zombies
+        # Maenjo de los zombies
         for zombie in zombieList:
             zombie.pos[1] -= zombie.speed * delta
 
@@ -432,7 +439,7 @@ if __name__ == "__main__":
             zombie.collision(humanList)
             zombie.update()
 
-        # Movimiento de los humanos
+        # Manejo de los humanos
         for human in humanList:
             human.pos[1] -= human.speed * delta
 
@@ -474,37 +481,47 @@ if __name__ == "__main__":
 
         # Se dibuja el grafo de escena con texturas
         glUseProgram(tex_pipeline.shaderProgram)
-        sg.drawSceneGraphNodeTex(tex_scene, tex_pipeline, "transform", 1)
+        sg.drawSceneGraphNodeTex(texScene, tex_pipeline, "transform", False )
 
         if controller.useGoogles == True:
+            glUseProgram(transparentTexPipeline.shaderProgram)
+            googleTransparency = shapes.clamp(math.cos(t1*5), 0.4, 0.8)
             for human in humanList:
                 if human in infectedList:
-                    sg.drawSceneGraphNodeTex(human.model, tex_pipeline, "transform", 0)
+                    sg.drawSceneGraphNodeTex(human.model, transparentTexPipeline, "transform", True, googleTransparency)
             if player.isInfected == True:
-                sg.drawSceneGraphNodeTex(player.model, tex_pipeline, "transform", 0)
+                sg.drawSceneGraphNodeTex(player.model, transparentTexPipeline, "transform", True, googleTransparency)
 
         # Se dibuja la pantalla de color
         glUseProgram(colorPipeline.shaderProgram)
+
+
         if(player.isAlive == False):
-            sg.drawSceneGraphNodeShader(hudNode, colorPipeline, "transform", transparency, 2)
-            palabra = sg.findNode(hudNode, "gameOver")
+            # La pantalla se pone roja
+            sg.drawSceneGraphNodeShader(hudScene, colorPipeline, "transform", transparency, 2)
+
+            # Dibujar Game Over
+            palabra = sg.findNode(hudScene, "gameOver")
             palabra.transform = tr.matmul([tr.translate(transparency-0.95,0,0), tr.shearing(shearingEffect,0,0,0,0,0)])
              
+
+            # Animacion de "game over" 
             if transparency > 1.0:
                 transparency -= 3*delta
             else:
                 shearingEffect -= 2*delta    
-
             shearingEffect -= 4.5*delta
 
             if shearingEffect <= 0:
                 shearingEffect = 0    
 
         elif(controller.gameWon == True and player.isAlive == True):
+            # Se dibuja la escena de victoria
             sg.drawSceneGraphNodeShader(victoryScreenNode, colorPipeline, "transform", victoryPos, 1)
-            palabra = sg.findNode(hudNode, "victory")
+            palabra = sg.findNode(hudScene, "victory")
             palabra.transform = tr.matmul([tr.translate(victoryPos-0.99,0.1,0),tr.shearing(0,shearingEffect,0,0,0,0)])
 
+            # Aniamcion de "victory royale"
             if victoryPos > 1.0:
                 victoryPos -= 5.5*delta
             else:
@@ -517,6 +534,7 @@ if __name__ == "__main__":
 
 
         elif(player.isInfected == True):
+            # Efecto de alucinacion de la infeccion
             transparency = 3.0
             sg.drawSceneGraphNodeShader(pantallaNode, colorPipeline, "transform", transparency, 0)
 
@@ -525,6 +543,7 @@ if __name__ == "__main__":
 
     # freeing GPU memory
     mainScene.clear()
-    tex_scene.clear()
+    texScene.clear()
+    hudScene.clear()
 
     glfw.terminate()

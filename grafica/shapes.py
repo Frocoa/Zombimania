@@ -3,6 +3,7 @@
 """Vertices and indices for a variety of simple shapes"""
 
 import math
+import random as rand
 
 __author__ = "Daniel Calderon"
 __license__ = "MIT"
@@ -14,27 +15,28 @@ class Shape:
         self.indices = indices
         self.textureFileName = textureFileName
 
-
+# retorna min_value si num < min_value, 
+#max_value si num > max_value, num sino
 def clamp(num, min_value, max_value):
    return max(min(num, max_value), min_value)
 
 
+# shape de alas con discretizacion
 def createWings(n):  #Al poner un n mas alto las alas parecen mas como de insecto
 
     vertices = [0.0, 0.0, 0.0,  0.8, 0.643, 0.24]
 
     indices = []
-            #0, 1, 4,
-            #2, 3, 4]         
-
+    
     for i in range(n-2):
+        colorChange = rand.uniform(0,0.1) # para evitar un color demasiado plano
         i += 1
-        vertices += [       #vertices                  #Color dorado
-                            -0.5,  0.5-i*0.5/n,  0.0,  0.8, 0.643, 0.24,
-                    0.0 - (0.5)/i, 0.5-i*0.5/n,  0.0,  0.8, 0.643, 0.24,
+        vertices += [       #vertices                  #Color dorado aleatorio
+                            -0.5,  0.5-i*0.5/n,  0.0,  0.8 + colorChange, 0.643 + colorChange, 0.24 + colorChange,
+                    0.0 - (0.5)/i, 0.5-i*0.5/n,  0.0,  0.8 - colorChange, 0.643 - colorChange, 0.24 - colorChange,
 
-                              0.5,  0.5-i*0.5/n, 0.0,  0.8, 0.643, 0.24,
-                    0.0 + (0.5/i),  0.5-i*0.5/n, 0.0,  0.8, 0.643, 0.24]
+                              0.5,  0.5-i*0.5/n, 0.0,  0.8 - colorChange, 0.643 - colorChange, 0.24 - colorChange,
+                    0.0 + (0.5/i),  0.5-i*0.5/n, 0.0,  0.8 + colorChange, 0.643 + colorChange, 0.24 + colorChange,]
 
         indices += [ 
                 1+4*(i-1), 2+4*(i-1), 0,
@@ -60,18 +62,20 @@ def createColorQuad(r, g, b):
 
     return Shape(vertices, indices)
 
-
+# retorna los vertices de la estrella dinamica
 def movileStarVertices(t):
     cos = clamp(abs(math.cos(18*t)),0.45,0.65)
     sin = clamp(abs(math.sin(18*t)),0.45,0.65)
-    vertices = [-0.5 * cos, -0.25 * cos, 0,  0.8, 0.8, 0.0,
-                0.5 * cos,  -0.25 * cos, 0,  0.9, 0.8, 0.0,
-                0.0, 0.5 * cos, 0,  0.8, 0.8, 0.0,
-                -0.5 * sin, 0.25 * sin, 0,  0.8, 0.8, 0.0,
-                0.5 * sin, 0.25 * sin, 0,  0.9, 0.8, 0.0,
-                0.0, -0.5 * sin, 0, 0.9, 0.8, 0.0]
+    vertices = [       #Vertices                       # Colores
+                    -0.5 * cos,   -0.25 * cos,  0,   0.8, 0.8, 0.0,
+                     0.5 * cos,   -0.25 * cos,  0,   0.9, 0.8, 0.0,
+                           0.0,     0.5 * cos,  0,   0.8, 0.8, 0.0,
+                    -0.5 * sin,    0.25 * sin,  0,   0.8, 0.8, 0.0,
+                     0.5 * sin,    0.25 * sin,  0,   0.9, 0.8, 0.0,
+                           0.0,    -0.5 * sin,  0,   0.9, 0.8, 0.0]
     return vertices            
 
+# crea una estrella con vertices dinamicos
 def createMovileStar(newVertices):
     indices = [ 0, 1, 2,
                 3, 4, 5]
@@ -95,6 +99,7 @@ def createTextureQuad(nx, ny):
 
     return Shape(vertices, indices)
 
+# Crea una figura con varios vertices con la textura de una calavera
 def createTextureSkull():
     vertices = [
         -0.3666, 0.3666, 0.0, 0.0, 0,
@@ -161,6 +166,11 @@ def createMultiTextureQuad(xi, xf, yi, yf):
 
     return Shape(vertices, indices)
 
+
+########################################################
+#Aqui se empiezan a crear un monton de shapes de letras#
+########################################################
+
 def createLetterG():
     vertices = [
     #   positions        colors
@@ -200,7 +210,6 @@ def createLetterG():
 
 def createLetterA():
     vertices = [
-            #   positions        colors
                 -0.5, 0.5, 0.0,  0.0, 0.0, 0.0, #0
                 0.5, 0.5, 0.0,  0.0, 0.0, 0.0, #1
                 -0.5, 0.25, 0.0,  0.0, 0.0, 0.0, #2
@@ -232,7 +241,6 @@ def createLetterA():
 
 def createLetterM():
     vertices = [
-    #   positions        colors
                 -0.5, 0.5, 0.0,  0.0, 0.0, 0.0,
                 -0.5, 0.25, 0.0, 0.0, 0.0, 0.0,
                 0.5, 0.25, 0.0,  0.0, 0.0, 0.0,
@@ -265,7 +273,6 @@ def createLetterM():
 
 def createLetterO():
     vertices = [
-    #   positions        colors
                 -0.5, 0.5, 0.0,  0.0, 0.0, 0.0,
                 0.5, 0.5 ,0.0,  0.0, 0.0, 0.0,
                 -0.5, 0.25, 0.0,  0.0, 0.0, 0.0,
@@ -297,7 +304,6 @@ def createLetterO():
 
 def createLetterV():
     vertices = [
-    #   positions        colors
                 -0.5, 0.5, 0.0,   0.0, 0.0, 0.0,
                 -0.25, 0.5, 0.0,  0.0, 0.0, 0.0,
                 0.25, -0.5, 0.0,  0.0, 0.0, 0.0,
@@ -319,7 +325,6 @@ def createLetterV():
 
 def createLetterR():
     vertices = [
-    #   positions        colors
                 -0.5, 0.5, 0.0,  0.0, 0.0, 0.0, #0
                 0.5, 0.5, 0.0,  0.0, 0.0, 0.0, #1
                 0.5, 0.25, 0.0,  0.0, 0.0, 0.0, #2
@@ -349,14 +354,12 @@ def createLetterR():
                 11, 1, 9,
                 9, 11, 12,
                 13, 16, 14,
-                14, 15, 13
-                ]
+                14, 15, 13]
 
     return Shape(vertices, indices)
 
 def createLetterI():
     vertices = [
-    #   positions        colors
                 0.0, 0.5, 0.0,  0.0, 0.0, 0.0,
                 0.25, 0.5, 0.0,  0.0, 0.0, 0.0,
                 0.0, 0.25, 0.0,  0.0, 0.0, 0.0,
@@ -377,7 +380,6 @@ def createLetterI():
 
 def createLetterC():
     vertices = [
-    #   positions        colors
                 -0.5, 0.5, 0.0,  0.0, 0.0, 0.0,
                 0.5, 0.5, 0.0,  0.0, 0.0, 0.0,
                 -0.5, 0.25, 0.0,  0.0, 0.0, 0.0,
@@ -402,7 +404,6 @@ def createLetterC():
 
 def createLetterT():
     vertices = [
-    #   positions        colors
                 -0.5, 0.5, 0.0,  0.0, 0.0, 0.0,
                 0.5, 0.5, 0.0,  0.0, 0.0, 0.0,
                 -0.5, 0.25, 0.0,  0.0, 0.0, 0.0,
@@ -422,7 +423,6 @@ def createLetterT():
 
 def createLetterY():
     vertices = [
-    #   positions        colors
                 -0.5, 0.5, 0.0,  0.0, 0.0, 0.0,
                 -0.25, 0.5, 0.0,  0.0, 0.0, 0.0,
                 0.0, -0.25, 0.0,  0.0, 0.0, 0.0,
@@ -443,7 +443,6 @@ def createLetterY():
 
 def createLetterL():
     vertices = [
-    #   positions        colors
                 -0.5, 0.5, 0.0,  0.0, 0.0, 0.0,
                 -0.25, 0.5, 0.0,  0.0, 0.0, 0.0,
                 -0.5, -0.5, 0.0,  0.0, 0.0, 0.0,
@@ -460,11 +459,11 @@ def createLetterL():
                 6, 4, 5]
     return Shape(vertices, indices)
 
-
+# shape de una linea
 def createLine():
     vertices = [
                 #Vertices         #Color
-                 0.5,  0.5, 0.0,  0.36, 0.47, 0.53,
+                 0.5,  0.5, 0.0,   0.36, 0.47, 0.53,
                 -0.25, -0.45, 0.0,  0.36, 0.47, 0.53]
               
     indices = [0, 1]

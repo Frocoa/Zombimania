@@ -3,35 +3,58 @@
 import numpy as np
 import math
 from OpenGL.GL import *
-import grafica.basic_shapes as bs
-import grafica.easy_shaders as es
+import grafica.shaders as shad
+import grafica.shapes as shapes
 import grafica.transformations as tr
-import grafica.ex_curves as cv
 import grafica.scene_graph as sg
 
 def createGPUShape(shape, pipeline):
     # Funcion Conveniente para facilitar la inicializacion de un GPUShape
-    gpuShape = es.GPUShape().initBuffers()
+    gpuShape = shad.GPUShape().initBuffers()
     pipeline.setupVAO(gpuShape)
     gpuShape.fillBuffers(shape.vertices, shape.indices, GL_STATIC_DRAW)
     return gpuShape
 
 def createTextureGPUShape(shape, pipeline, path):
     # Funcion Conveniente para facilitar la inicializacion de un GPUShape con texturas
-    gpuShape = es.GPUShape().initBuffers()
+    gpuShape = shad.GPUShape().initBuffers()
     pipeline.setupVAO(gpuShape)
     gpuShape.fillBuffers(shape.vertices, shape.indices, GL_STATIC_DRAW)
-    gpuShape.texture = es.textureSimpleSetup(
+    gpuShape.texture = shad.textureSimpleSetup(
         path, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST)
     return gpuShape
 
+# Se crea la shape de la puerta de salida
+def crearSalida(tex_pipeline):
+    model = createTextureGPUShape(shapes.createTextureQuad(1,1), tex_pipeline, "sprites/salida.png")
+    salidaNode = sg.SceneGraphNode("salida")
+    salidaNode.transform = tr.matmul([tr.translate(-0.74,0.8,0), tr.scale(0.3,0.4,1.0)])
+    salidaNode.childs = [model]
+    return salidaNode
+
+#Se crea la shape con textura de la decoraciones que hay en el hospital
+def crearDecoracion(tex_pipeline):
+    shapeDecoraction = shapes.createTextureQuad(1,2)
+    gpuDecoration = shad.GPUShape().initBuffers()
+    tex_pipeline.setupVAO(gpuDecoration)
+    gpuDecoration.fillBuffers(shapeDecoraction.vertices, shapeDecoraction.indices, GL_STATIC_DRAW)
+    gpuDecoration.texture = shad.textureSimpleSetup(
+        "sprites/decoracion.png", GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST)
+
+    decoracionNode = sg.SceneGraphNode("decoracion")
+    decoracionNode.transform = tr.scale(2.0,2.9,0)
+    decoracionNode.childs = [gpuDecoration]
+    return decoracionNode
+
+# Se crea el grafo con la palabra "Game Over"
 def crearGameOver(pipeline):
-    gpuG = createGPUShape(bs.createLetterG(), pipeline)
-    gpuA = createGPUShape(bs.createLetterA(), pipeline)
-    gpuM = createGPUShape(bs.createLetterM(), pipeline)
-    gpuO = createGPUShape(bs.createLetterO(), pipeline)
-    gpuV = createGPUShape(bs.createLetterV(), pipeline)
-    gpuR = createGPUShape(bs.createLetterR(), pipeline)
+    #Los shapes de cada letra
+    gpuG = createGPUShape(shapes.createLetterG(), pipeline)
+    gpuA = createGPUShape(shapes.createLetterA(), pipeline)
+    gpuM = createGPUShape(shapes.createLetterM(), pipeline)
+    gpuO = createGPUShape(shapes.createLetterO(), pipeline)
+    gpuV = createGPUShape(shapes.createLetterV(), pipeline)
+    gpuR = createGPUShape(shapes.createLetterR(), pipeline)
 
     # Se crea el nodo con la G
     gNode = sg.SceneGraphNode("G")
@@ -73,17 +96,19 @@ def crearGameOver(pipeline):
 
     return gameOverNode
 
+# Se crea el grafo con la frase "Victory Royale"
 def crearVictory(pipeline):
-    gpuV = createGPUShape(bs.createLetterV(), pipeline)
-    gpuI = createGPUShape(bs.createLetterI(), pipeline)
-    gpuC = createGPUShape(bs.createLetterC(), pipeline)
-    gpuT = createGPUShape(bs.createLetterT(), pipeline)
-    gpuO = createGPUShape(bs.createLetterO(), pipeline)
-    gpuR = createGPUShape(bs.createLetterR(), pipeline)
-    gpuY = createGPUShape(bs.createLetterY(), pipeline)
-    gpuA = createGPUShape(bs.createLetterA(), pipeline)
-    gpuL = createGPUShape(bs.createLetterL(), pipeline)
-    gpuM = createGPUShape(bs.createLetterM(), pipeline)
+    #Los shapes de cada letra
+    gpuV = createGPUShape(shapes.createLetterV(), pipeline)
+    gpuI = createGPUShape(shapes.createLetterI(), pipeline)
+    gpuC = createGPUShape(shapes.createLetterC(), pipeline)
+    gpuT = createGPUShape(shapes.createLetterT(), pipeline)
+    gpuO = createGPUShape(shapes.createLetterO(), pipeline)
+    gpuR = createGPUShape(shapes.createLetterR(), pipeline)
+    gpuY = createGPUShape(shapes.createLetterY(), pipeline)
+    gpuA = createGPUShape(shapes.createLetterA(), pipeline)
+    gpuL = createGPUShape(shapes.createLetterL(), pipeline)
+    gpuM = createGPUShape(shapes.createLetterM(), pipeline)
 
     # Se crea el nodo con la V
     vNode = sg.SceneGraphNode("V")
@@ -145,14 +170,15 @@ def crearVictory(pipeline):
     victoryNode.childs = [vNode, iNode, cNode, tNode, oNode, rNode, yNode, rNode2, oNode2, yNode2, aNode, lNode, eNode]
 
     return victoryNode
+
 # Crea el hospital
-def crearEscenario(pipeline):
+def createGeometricScene(pipeline):
 
     # Las shapes utilizadas:
-    gpuBlueGreenQuad = createGPUShape(bs.createColorQuad(0.411, 0.611, 0.592), pipeline)
-    gpuDarkBlueGreenQuad = createGPUShape(bs.createColorQuad(0.266,0.44, 0.42 ), pipeline) 
-    gpuGrayQuad = createGPUShape(bs.createColorQuad(0.537, 0.647, 0.714 ), pipeline)
-    gpuLine = createGPUShape(bs.createLine(), pipeline)
+    gpuBlueGreenQuad = createGPUShape(shapes.createColorQuad(0.411, 0.611, 0.592), pipeline)
+    gpuDarkBlueGreenQuad = createGPUShape(shapes.createColorQuad(0.266,0.44, 0.42 ), pipeline) 
+    gpuGrayQuad = createGPUShape(shapes.createColorQuad(0.537, 0.647, 0.714 ), pipeline)
+    gpuLine = createGPUShape(shapes.createLine(), pipeline)
 
     # Nodo del muro del hospital
     muroNode = sg.SceneGraphNode("muro")
@@ -215,22 +241,3 @@ def crearEscenario(pipeline):
 
     return escenarioNode
 
-def crearSalida(tex_pipeline):
-    model = createTextureGPUShape(bs.createTextureQuad(1,1), tex_pipeline, "sprites/salida.png")
-    salidaNode = sg.SceneGraphNode("salida")
-    salidaNode.transform = tr.matmul([tr.translate(-0.74,0.8,0), tr.scale(0.3,0.4,1.0)])
-    salidaNode.childs = [model]
-    return salidaNode
-
-def crearDecoracion(tex_pipeline):
-    shapeQuestionBoxes = bs.createTextureQuad(1,2)
-    gpuDecoration = es.GPUShape().initBuffers()
-    tex_pipeline.setupVAO(gpuDecoration)
-    gpuDecoration.fillBuffers(shapeQuestionBoxes.vertices, shapeQuestionBoxes.indices, GL_STATIC_DRAW)
-    gpuDecoration.texture = es.textureSimpleSetup(
-        "sprites/decoracion.png", GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST)
-
-    decoracionNode = sg.SceneGraphNode("decoracion")
-    decoracionNode.transform = tr.scale(1.5,2.4,0)
-    decoracionNode.childs = [gpuDecoration]
-    return decoracionNode
